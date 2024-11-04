@@ -1,0 +1,14 @@
+{
+  "api": "1.0.0",
+  "editorType": [
+    "figma"
+  ],
+  "id": "elc-themer",
+  "name": "ELC Themer",
+  "main": "build/main.js",
+  "ui": "build/ui.js",
+  "enableProposedApi": true,
+  "permissions": [
+    "teamlibrary"
+  ]
+}
