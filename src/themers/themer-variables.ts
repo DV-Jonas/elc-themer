@@ -7,48 +7,90 @@ type VariableConfig = {
 };
 
 const themer = async (nodes: SceneNode[], theme: Theme) => {
+  console.log('nodes', nodes);
   for (const node of nodes) {
     const boundVariables = node.boundVariables;
-    if (!boundVariables) continue;
+    console.log(node, 'boundVariables', boundVariables);
+    if (boundVariables) {
+      processBoundVariables(node, boundVariables, theme);
+    }
 
-    for (const [property, boundByNodes] of Object.entries(boundVariables)) {
-      if (boundByNodes) {
-        const variableRefs = Array.isArray(boundByNodes)
-          ? boundByNodes
-          : [boundByNodes];
-        for (const variableRef of variableRefs) {
-          if (variableRef.type === 'VARIABLE_ALIAS') {
-            // Get the source variable
-            const variableId = variableRef.id as string;
-            const variable = figma.variables.getVariableById(variableId);
+    // Check for component properties with bound variables
+    if ('componentProperties' in node) {
+      processComponentProperties(node, theme);
+    }
+  }
+};
 
-            // Determine the source collection
-            const collectionId = variable?.variableCollectionId as string;
-            const collection =
-              await figma.variables.getVariableCollectionByIdAsync(
-                collectionId
-              );
-
-            // Determine the source explicit modes (if any)
-            const explicitModes = await getModeNames(
-              node.explicitVariableModes!,
-              variable!
-            );
-
-            // Create the variable pointer
-            const config = {
-              collection: collection!.name,
-              path: variable!.name,
-              explicitModes: explicitModes,
-            };
-
-            //Apply the variable
-            applyVariable(node, property, theme, config);
-          }
+const processBoundVariables = async (
+  node: SceneNode,
+  boundVariables: Record<string, any>,
+  theme: Theme
+) => {
+  for (const [property, boundByNodes] of Object.entries(boundVariables)) {
+    if (boundByNodes) {
+      const variableRefs = Array.isArray(boundByNodes)
+        ? boundByNodes
+        : [boundByNodes];
+      for (const variableRef of variableRefs) {
+        if (variableRef.type === 'VARIABLE_ALIAS') {
+          const config = await createVariableConfig(node, variableRef);
+          applyVariable(node, property, theme, config);
         }
       }
     }
   }
+};
+
+const processComponentProperties = async (node: InstanceNode, theme: Theme) => {
+  const propertiesToUpdate: Record<string, any> = {};
+
+  for (const [propertyName, property] of Object.entries(
+    node.componentProperties
+  )) {
+    if (property.boundVariables && property.boundVariables.value) {
+      const variableRef = property.boundVariables.value;
+      if (variableRef.type === 'VARIABLE_ALIAS') {
+        const config = await createVariableConfig(node, variableRef);
+        const collection = theme.collections.find(
+          (c) => c.name === config.collection
+        );
+        const variable = collection!.variables?.find(
+          (v) => v.name === config.path
+        );
+
+        const variableAlias = figma.variables.createVariableAlias(variable!);
+        propertiesToUpdate[propertyName] = variableAlias;
+      }
+    }
+  }
+  if (Object.keys(propertiesToUpdate).length > 0) {
+    node.setProperties(propertiesToUpdate);
+  }
+};
+
+const createVariableConfig = async (
+  node: SceneNode,
+  variableRef: any
+): Promise<VariableConfig> => {
+  const variableId = variableRef.id as string;
+  const variable = figma.variables.getVariableById(variableId);
+
+  const collectionId = variable?.variableCollectionId as string;
+  const collection = await figma.variables.getVariableCollectionByIdAsync(
+    collectionId
+  );
+
+  const explicitModes = await getModeNames(
+    node.explicitVariableModes!,
+    variable!
+  );
+
+  return {
+    collection: collection!.name,
+    path: variable!.name,
+    explicitModes: explicitModes,
+  };
 };
 
 const applyVariable = async (
@@ -82,9 +124,6 @@ const applyVariable = async (
     node.setBoundVariable(nodeProperty as VariableBindableNodeField, variable!);
   }
 
-  // Swap properties
-  console.log('node', node);
-
   // Set the explicit modes when applicable
   if (config.explicitModes) {
     for (const explicitMode of config.explicitModes) {
@@ -96,10 +135,7 @@ const applyVariable = async (
           collection!.collection! as VariableCollection,
           modeId!
         );
-      } catch (error) {
-        console.log('Error setting explicit mode', error);
-        console.log('args', node, nodeProperty);
-      }
+      } catch (error) {}
     }
   }
 };
