@@ -1,17 +1,39 @@
 type Theme = {
   name: string;
   favorite: boolean;
-  collections: { name: string; key: string }[];
+  collections: {
+    name: string;
+    key: string;
+    collection: VariableCollection;
+    variables: Variable[] | null;
+    modes?: { modeId: string; name: string }[];
+  }[];
 };
 
 const loadThemesAsync = async () => {
-  const collections =
+  const libraryCollections =
     await figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync();
 
-  const groupedCollections = await collections.reduce(
-    async (accPromise, collection) => {
+  const groupedCollections = await libraryCollections.reduce(
+    async (accPromise, libraryCollection) => {
       const accumulator = await accPromise;
-      const { libraryName, name, key } = collection;
+      const { libraryName, name, key } = libraryCollection;
+
+      const libraryVariablesRefs =
+        await figma.teamLibrary.getVariablesInLibraryCollectionAsync(
+          libraryCollection.key
+        );
+
+      const variables = await Promise.all(
+        libraryVariablesRefs.map(
+          async (ref) => await figma.variables.importVariableByKeyAsync(ref.key)
+        )
+      );
+
+      const variableCollection =
+        (await figma.variables.getVariableCollectionByIdAsync(
+          variables[0].variableCollectionId
+        ))!;
 
       if (!accumulator[libraryName]) {
         const favorite = Boolean(
@@ -25,7 +47,12 @@ const loadThemesAsync = async () => {
         };
       }
 
-      accumulator[libraryName].collections.push({ name, key });
+      accumulator[libraryName].collections.push({
+        name,
+        key,
+        collection: variableCollection,
+        variables,
+      });
 
       return accumulator;
     },

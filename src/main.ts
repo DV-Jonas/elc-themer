@@ -14,6 +14,11 @@ export default async function () {
     emit(THEMES, themes);
   };
 
+  const onApplyTheme = async (themeName: string) => {
+    const selectedTheme = themes.find((t) => t.name === themeName);
+    applyTheme(selectedTheme!);
+  };
+
   showUI({
     height: tokens.plugin.size.height,
     width: tokens.plugin.size.width,
@@ -22,5 +27,5 @@ export default async function () {
   emit(THEMES, themes);
 
   on(TOGGLE_FAVORITE, onToggleFavorite);
-  on(APPLY_THEME, applyTheme);
+  on(APPLY_THEME, onApplyTheme);
 }

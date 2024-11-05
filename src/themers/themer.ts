@@ -12,7 +12,7 @@ const applyTheme = (theme: Theme) => {
 
   const mutableNodes = [...nodes]; // Create a mutable copy of the nodes array
   metaDataThemer(mutableNodes, theme);
-  // variablesThemer(mutableNodes, theme);
+  variablesThemer(mutableNodes, theme);
 };
 
 export default applyTheme;

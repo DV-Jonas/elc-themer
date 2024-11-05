@@ -24,7 +24,7 @@ const Themes = ({ themes }: Props) => {
   };
 
   const onApplyTheme = () => {
-    emit(APPLY_THEME, selectedTheme);
+    emit(APPLY_THEME, selectedTheme!.name);
   };
 
   return (

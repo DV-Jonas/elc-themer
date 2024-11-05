@@ -562,6 +562,10 @@ video {
   display: flex;
 }
 
+.table {
+  display: table;
+}
+
 .h-10 {
   height: 2.5rem;
 }
@@ -651,6 +655,16 @@ video {
   background-color: rgb(0 0 0 / var(--tw-bg-opacity));
 }
 
+.bg-on-surface-container-high-variant {
+  --tw-bg-opacity: 1;
+  background-color: rgb(189 189 189 / var(--tw-bg-opacity));
+}
+
+.bg-on-surface-container-high-variant-dark {
+  --tw-bg-opacity: 1;
+  background-color: rgb(85 84 84 / var(--tw-bg-opacity));
+}
+
 .bg-on-surface-container-variant {
   --tw-bg-opacity: 1;
   background-color: rgb(210 210 210 / var(--tw-bg-opacity));
@@ -679,16 +693,6 @@ video {
 .bg-surface-container-dark {
   --tw-bg-opacity: 1;
   background-color: rgb(57 56 56 / var(--tw-bg-opacity));
-}
-
-.bg-on-surface-container-high-variant {
-  --tw-bg-opacity: 1;
-  background-color: rgb(189 189 189 / var(--tw-bg-opacity));
-}
-
-.bg-on-surface-container-high-variant-dark {
-  --tw-bg-opacity: 1;
-  background-color: rgb(85 84 84 / var(--tw-bg-opacity));
 }
 
 .fill-on-primary {
@@ -852,6 +856,11 @@ video {
   border-color: rgb(68 68 68 / var(--tw-divide-opacity));
 }
 
+.dark\:bg-on-surface-container-high-variant-dark:is(.figma-dark *) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(85 84 84 / var(--tw-bg-opacity));
+}
+
 .dark\:bg-on-surface-container-variant-dark:is(.figma-dark *) {
   --tw-bg-opacity: 1;
   background-color: rgb(68 68 68 / var(--tw-bg-opacity));
@@ -860,11 +869,6 @@ video {
 .dark\:bg-surface-container-dark:is(.figma-dark *) {
   --tw-bg-opacity: 1;
   background-color: rgb(57 56 56 / var(--tw-bg-opacity));
-}
-
-.dark\:bg-on-surface-container-high-variant-dark:is(.figma-dark *) {
-  --tw-bg-opacity: 1;
-  background-color: rgb(85 84 84 / var(--tw-bg-opacity));
 }
 
 .dark\:text-on-surface-variant-dark:is(.figma-dark *) {
