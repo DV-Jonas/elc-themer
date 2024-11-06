@@ -62,19 +62,11 @@ const applyTextProperty = async (
     const collection = theme.collections.find(
       (c) => c.name === textToken.collection
     );
-
-    const collectionValues =
-      await figma.teamLibrary.getVariablesInLibraryCollectionAsync(
-        collection!.key
-      );
-
-    const textRef = collectionValues.find((v) => v.name === textToken.path);
-
-    const textVariable = await figma.variables.importVariableByKeyAsync(
-      textRef!.key
+    const collectionValues = collection!.variables!;
+    const textVariable = collectionValues.find(
+      (v) => v.name === textToken.path
     );
-
-    const textValue = textVariable.resolveForConsumer(node).value;
+    const textValue = textVariable!.resolveForConsumer(node).value;
 
     const fontName = (node as TextNode).fontName as FontName;
     await figma.loadFontAsync(fontName);
