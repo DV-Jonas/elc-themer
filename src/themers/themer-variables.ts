@@ -7,18 +7,54 @@ type VariableConfig = {
 };
 
 const themer = async (nodes: SceneNode[], theme: Theme) => {
-  console.log('nodes', nodes);
   for (const node of nodes) {
+    try {
+      if (node.type === 'INSTANCE') {
+        await processInstanceNode(node as InstanceNode, theme);
+      } else {
+        await processNode(node, theme);
+      }
+    } catch (error) {
+      console.error('Error processing node:', node, error);
+    }
+  }
+};
+
+const processInstanceNode = async (
+  instanceNode: InstanceNode,
+  theme: Theme
+) => {
+  try {
+    await processNode(instanceNode, theme); // Process the instance node itself
+
+    for (const childNode of instanceNode.children) {
+      if (childNode.type === 'INSTANCE') {
+        await processInstanceNode(childNode as InstanceNode, theme);
+      } else {
+        const boundVariables = childNode.boundVariables;
+        if (boundVariables) {
+          await processBoundVariables(childNode, boundVariables, theme);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error processing instance node:', instanceNode, error);
+  }
+};
+
+const processNode = async (node: SceneNode, theme: Theme) => {
+  try {
     const boundVariables = node.boundVariables;
-    console.log(node, 'boundVariables', boundVariables);
-    if (boundVariables) {
-      processBoundVariables(node, boundVariables, theme);
+
+    if ('componentProperties' in node) {
+      await processComponentProperties(node, theme);
     }
 
-    // Check for component properties with bound variables
-    if ('componentProperties' in node) {
-      processComponentProperties(node, theme);
+    if (boundVariables && !boundVariables.componentProperties) {
+      await processBoundVariables(node, boundVariables, theme);
     }
+  } catch (error) {
+    console.error('Error processing node:', node, error);
   }
 };
 
