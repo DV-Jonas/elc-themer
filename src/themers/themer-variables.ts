@@ -9,7 +9,7 @@ type VariableConfig = {
 const themer = async (nodes: SceneNode[], theme: Theme) => {
   for (const node of nodes) {
     try {
-      if (node.type === 'INSTANCE') {
+      if (node.type === 'INSTANCE' || node.type === 'FRAME') {
         await processInstanceNode(node as InstanceNode, theme);
       } else {
         await processNode(node, theme);
@@ -28,7 +28,7 @@ const processInstanceNode = async (
     await processNode(instanceNode, theme); // Process the instance node itself
 
     for (const childNode of instanceNode.children) {
-      if (childNode.type === 'INSTANCE') {
+      if (childNode.type === 'INSTANCE' || childNode.type === 'FRAME') {
         await processInstanceNode(childNode as InstanceNode, theme);
       } else {
         const boundVariables = childNode.boundVariables;
