@@ -32,7 +32,7 @@ const loadThemesAsync = async () => {
 
       const variableCollection =
         (await figma.variables.getVariableCollectionByIdAsync(
-          variables[0].variableCollectionId
+          variables[0]?.variableCollectionId
         ))!;
 
       if (!accumulator[libraryName]) {
