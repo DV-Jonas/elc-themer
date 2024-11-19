@@ -71,7 +71,7 @@ const processBoundVariables = async (
       for (const variableRef of variableRefs) {
         if (variableRef.type === 'VARIABLE_ALIAS') {
           const config = await createVariableConfig(node, variableRef);
-          applyVariable(node, property, theme, config);
+          await applyVariable(node, property, theme, config);
         }
       }
     }

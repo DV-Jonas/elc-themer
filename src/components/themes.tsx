@@ -2,8 +2,8 @@ import { h, Fragment } from 'preact';
 import { Theme } from '../themes';
 import List from './list';
 import { Star } from 'lucide-preact';
-import { TOGGLE_FAVORITE, APPLY_THEME } from '../events';
-import { emit } from '@create-figma-plugin/utilities';
+import { TOGGLE_FAVORITE, APPLY_THEME, THEME_APPLIED } from '../events';
+import { emit, on } from '@create-figma-plugin/utilities';
 import Button from './button';
 import { useState } from 'preact/hooks';
 
@@ -13,6 +13,9 @@ type Props = {
 
 const Themes = ({ themes }: Props) => {
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  on(THEME_APPLIED, () => setLoading(false));
 
   const onSelectedTheme = (theme: Theme) => {
     setSelectedTheme((prevTheme) => (prevTheme === theme ? null : theme));
@@ -24,6 +27,7 @@ const Themes = ({ themes }: Props) => {
   };
 
   const onApplyTheme = () => {
+    setLoading(true);
     emit(APPLY_THEME, selectedTheme!.name);
   };
 
@@ -54,7 +58,11 @@ const Themes = ({ themes }: Props) => {
           );
         })}
       </List.Root>
-      <Button onClick={onApplyTheme} disabled={!selectedTheme} />
+      <Button
+        onClick={onApplyTheme}
+        disabled={!selectedTheme}
+        loading={loading}
+      />
     </div>
   );
 };

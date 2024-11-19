@@ -81,4 +81,22 @@ const detectGradientType = (
   return 'GRADIENT_LINEAR';
 };
 
-export { parseCSSGradient, detectGradientType };
+const fetchTeamComponents = async (teamId: string, apiKey: string) => {
+  const response = await fetch(
+    `https://api.figma.com/v1/teams/${teamId}/components`,
+    {
+      headers: {
+        'X-Figma-Token': apiKey,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch components from Figma API');
+  }
+
+  const data = await response.json();
+  return data.meta.components;
+};
+
+export { parseCSSGradient, detectGradientType, fetchTeamComponents };

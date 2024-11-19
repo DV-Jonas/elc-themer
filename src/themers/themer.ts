@@ -2,7 +2,7 @@ import { Theme } from '../themes';
 import metaDataThemer from './themer-meta-data';
 import variablesThemer from './themer-variables';
 
-const applyTheme = (theme: Theme) => {
+const applyTheme = async (theme: Theme) => {
   const nodes =
     figma.currentPage.selection.length > 0
       ? figma.currentPage.selection.flatMap((node) =>
@@ -11,8 +11,8 @@ const applyTheme = (theme: Theme) => {
       : figma.currentPage.findAll();
 
   const mutableNodes = [...nodes]; // Create a mutable copy of the nodes array
-  metaDataThemer(mutableNodes, theme);
-  variablesThemer(mutableNodes, theme);
+  await metaDataThemer(mutableNodes, theme);
+  await variablesThemer(mutableNodes, theme);
 };
 
 export default applyTheme;

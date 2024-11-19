@@ -41,12 +41,22 @@ const ToggleButton = ({
   return (
     <button
       className={classNames(
-        'hover:cursor-pointer dark:hover:bg-surface-container-dark p-2 rounded-md',
+        'hover:cursor-pointer hover:dark:bg-surface-container-dark hover:bg-surface-container p-2 rounded-md',
         iconSizeClass
       )}
       onClick={handleClick}
     >
-      {isOn ? <IconOn size={14} fill='white' /> : <IconOff size={14} />}
+      {isOn ? (
+        <IconOn
+          size={14}
+          className='fill-on-surface dark:fill-on-surface-dark'
+        />
+      ) : (
+        <IconOff
+          size={14}
+          className='stroke-on-surface dark:stroke-on-surface-dark'
+        />
+      )}
     </button>
   );
 };

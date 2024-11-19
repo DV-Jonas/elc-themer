@@ -1,4 +1,4 @@
-import { parseCSSGradient } from 'src/util';
+import { fetchTeamComponents, parseCSSGradient } from 'src/util';
 import { Theme } from '../themes';
 import config from 'config';
 
@@ -8,24 +8,26 @@ type Token = {
   collection: string;
 };
 
-const themer = (nodes: SceneNode[], theme: Theme) => {
+const themer = async (nodes: SceneNode[], theme: Theme) => {
   const nodesWithMetadata = nodes.filter((node) =>
     node.getSharedPluginDataKeys(config.namespace).includes(config.key)
   );
 
-  nodesWithMetadata.forEach(async (node) => {
+  for (const node of nodesWithMetadata) {
     const tokensAsString = node.getSharedPluginData(
       config.namespace,
       config.key
     );
-    const { textDecoration, textTransform, gradientOverlay } =
+    const { textDecoration, textTransform, gradientOverlay, icon } =
       JSON.parse(tokensAsString);
     if (node.type === 'TEXT') {
       await applyTextStyle(node, theme, textDecoration, textTransform);
+    } else if (node.name.includes('icon-')) {
+      // applyIconSwap(node, theme, icon);
     } else {
       await applyGradientOverlay(node, theme, gradientOverlay);
     }
-  });
+  }
 };
 
 const applyTextStyle = async (
@@ -125,6 +127,43 @@ const applyGradientOverlay = async (
       'Fills are mixed or not an array, applying gradient as the only fill.'
     );
     (node as GeometryMixin).fills = [gradientPaint];
+  }
+};
+
+const applyIconSwap = async (
+  node: SceneNode,
+  theme: Theme,
+  token: Token,
+  teamId: string,
+  apiKey: string
+) => {
+  if (!token?.shouldTheme) {
+    return;
+  }
+
+  const componentName = node.name;
+
+  try {
+    const components = await fetchTeamComponents(teamId, apiKey);
+    const componentData = components.find((c: any) => c.name === componentName);
+
+    if (componentData) {
+      const componentNode = await figma.importComponentByKeyAsync(
+        componentData.key
+      );
+      const newInstance = componentNode.createInstance();
+      newInstance.x = node.x;
+      newInstance.y = node.y;
+      newInstance.resize(node.width, node.height);
+      node.parent?.appendChild(newInstance);
+      node.remove();
+    } else {
+      console.error(
+        `Component with name ${componentName} not found in the team library.`
+      );
+    }
+  } catch (error) {
+    console.error('Error fetching components:', error);
   }
 };
 

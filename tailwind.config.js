@@ -7,11 +7,6 @@ export default {
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     colors: {
-      // divideColor: {
-      //   current: colors.neutral[600],
-      //   dark: colors.neutral[600],
-      //   DEFAULT: colors.neutral[600],
-      // },
       "primary": colors.primary[500],
       "on-primary": colors.neutral[0],
       "surface": {
@@ -23,7 +18,7 @@ export default {
         dark: colors.neutral[0]
       },
       "on-surface-variant": {
-        DEFAULT: colors.neutral[400],
+        DEFAULT: colors.neutral[500],
         dark: colors.neutral[400]
       },
       "surface-container": {
