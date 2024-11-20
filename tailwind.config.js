@@ -4,8 +4,6 @@ const colorTokens = tokens.primitives.color;
 const typographyTokens = tokens.primitives.font;
 const tailwindColors = require('tailwindcss/colors')
 
-console.log('tailwindColors', tailwindColors.rose)
-
 export default {
   content: ['./src/**/*.{ts,tsx}'],
   theme: {

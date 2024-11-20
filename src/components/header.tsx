@@ -42,7 +42,9 @@ const Header = () => {
               <div>No entries</div>
             ) : (
               Array.from(new Set(log)).map((entry, index) => (
-                <div key={index}>{entry}</div>
+                <div className={'text-xs mb-2'} key={index}>
+                  {entry}
+                </div>
               ))
             )}
           </div>
