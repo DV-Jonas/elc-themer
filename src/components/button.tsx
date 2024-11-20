@@ -13,14 +13,16 @@ const Button = ({
   onClick: () => void;
   disabled?: boolean;
   loading?: boolean;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'error';
   size?: 'md' | 'sm';
   fullWidth?: boolean;
   children: string | string[] | JSX.Element;
 }) => {
   const variantClasses =
     variant === 'secondary'
-      ? 'bg-surface-container text-on-surface'
+      ? 'bg-surface-container text-on-surface border-2 border-on-surface'
+      : variant === 'error'
+      ? 'bg-error text-on-error'
       : 'bg-primary text-on-primary';
 
   const sizeClasses =
@@ -32,7 +34,7 @@ const Button = ({
       disabled={disabled}
       className={`font-bold ${variantClasses} ${sizeClasses} ${
         fullWidth ? 'w-full' : 'px-2'
-      } disabled:bg-surface-container flex-shrink-0 border-2 border-on-surface disabled:text-on-surface-variant disabled:dark:bg-surface-container-dark disabled:dark:text-on-surface-variant-dark disabled:cursor-not-allowed`}
+      } disabled:bg-surface-container flex-shrink-0 disabled:text-on-surface-variant disabled:dark:bg-surface-container-dark disabled:dark:text-on-surface-variant-dark disabled:cursor-not-allowed`}
     >
       {loading ? (
         <div class='flex flow-row items-center gap-2 justify-center'>

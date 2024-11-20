@@ -1,62 +1,76 @@
 /** @type {import('tailwindcss').Config} */
 import tokens from './tokens.json';
-const colors = tokens.primitives.color;
-const typography = tokens.primitives.font;
+const colorTokens = tokens.primitives.color;
+const typographyTokens = tokens.primitives.font;
+const tailwindColors = require('tailwindcss/colors')
+
+console.log('tailwindColors', tailwindColors.rose)
 
 export default {
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     colors: {
-      "primary": colors.primary[500],
-      "on-primary": colors.neutral[0],
+      "primary": colorTokens.primary[500],
+      "on-primary": colorTokens.neutral[0],
       "surface": {
-        DEFAULT: colors.neutral[0],
-        dark: colors.neutral[800]
+        DEFAULT: colorTokens.neutral[0],
+        dark: colorTokens.neutral[800]
       },
       "on-surface": {
-        DEFAULT: colors.neutral[1000],
-        dark: colors.neutral[0]
+        DEFAULT: colorTokens.neutral[1000],
+        dark: colorTokens.neutral[0]
       },
       "on-surface-variant": {
-        DEFAULT: colors.neutral[500],
-        dark: colors.neutral[400]
+        DEFAULT: colorTokens.neutral[500],
+        dark: colorTokens.neutral[400]
       },
       "surface-container": {
-        DEFAULT: colors.neutral[100],
-        dark: colors.neutral[700]
+        DEFAULT: colorTokens.neutral[100],
+        dark: colorTokens.neutral[700]
       },
       "on-surface-container": {
-        DEFAULT: colors.neutral[1000],
-        dark: colors.neutral[0]
+        DEFAULT: colorTokens.neutral[1000],
+        dark: colorTokens.neutral[0]
       },
       "on-surface-container-variant": {
-        DEFAULT: colors.neutral[200],
-        dark: colors.neutral[600]
+        DEFAULT: colorTokens.neutral[200],
+        dark: colorTokens.neutral[600]
       },
       "surface-container-high": {
-        DEFAULT: colors.neutral[200],
-        dark: colors.neutral[600]
+        DEFAULT: colorTokens.neutral[200],
+        dark: colorTokens.neutral[600]
       },
       "on-surface-container-high": {
-        DEFAULT: colors.neutral[1000],
-        dark: colors.neutral[0]
+        DEFAULT: colorTokens.neutral[1000],
+        dark: colorTokens.neutral[0]
       },
       "on-surface-container-high-variant": {
-        DEFAULT: colors.neutral[300],
-        dark: colors.neutral[500]
+        DEFAULT: colorTokens.neutral[300],
+        dark: colorTokens.neutral[500]
       },
+      "error": {
+        DEFAULT: tailwindColors.rose[500],
+        dark: tailwindColors.rose[500]
+      },
+      "on-error": {
+        DEFAULT: colorTokens.neutral[1000],
+        dark: colorTokens.neutral[1000]
+      }
     },
     fontFamily: {
-      sans: [typography.family.body, 'sans-serif'],
+      sans: [typographyTokens.family.body, 'sans-serif'],
     },
     extend: {
+      // colors: {
+      //   ...defaultTheme.colors,
+      // },
       divideColor: {
-        current: colors.divider.light,
-        dark: colors.divider.dark,
+        current: colorTokens.divider.light,
+        dark: colorTokens.divider.dark,
       },
       fontSize: {
-        'sm': typography.size[300],
-        'base': typography.size[500]
+        'sm': typographyTokens.size[300],
+        'base': typographyTokens.size[500]
       },
     },
   },

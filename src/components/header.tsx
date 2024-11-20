@@ -29,13 +29,15 @@ const Header = () => {
     >
       <span>Select your frames, choose the brand, and click Apply</span>
 
-      <Button onClick={handleOpenButtonClick} variant='secondary' size='sm'>
-        Log {log.length > 0 ? `(*)` : ''}
-      </Button>
+      {log.length > 0 && (
+        <Button onClick={handleOpenButtonClick} variant='error' size='sm'>
+          Log
+        </Button>
+      )}
 
       {open && (
         <Modal onClose={handleOverlayClick} open={open}>
-          <div className={'p-4'}>
+          <div className={'p-4 text-xs'}>
             {log.length === 0 ? (
               <div>No entries</div>
             ) : (

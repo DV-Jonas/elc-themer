@@ -191,7 +191,7 @@ const applyVariable = async (
 
   if (!targetVariable) {
     // Log.append(`Variable not found for path: ${sourceConfig.path}`);
-    throw new Error(`Variable not found for path: ${sourceConfig.path}`);
+    throw new Error(`Variable not found in target theme: ${sourceConfig.path}`);
   }
 
   if (propertyName === 'fills' || propertyName === 'strokes') {
