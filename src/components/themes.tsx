@@ -62,7 +62,9 @@ const Themes = ({ themes }: Props) => {
         onClick={onApplyTheme}
         disabled={!selectedTheme}
         loading={loading}
-      />
+      >
+        Apply theme
+      </Button>
     </div>
   );
 };

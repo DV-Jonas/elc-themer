@@ -1,9 +1,11 @@
 import { Theme } from '../themes';
+import Log from 'src/log';
 
 type VariableConfig = {
-  collection: string;
+  collectionName: string;
   explicitModes: string[] | null;
   path: string;
+  variable: Variable;
 };
 
 const themer = async (nodes: SceneNode[], theme: Theme) => {
@@ -33,7 +35,7 @@ const processInstanceNode = async (
       } else {
         const boundVariables = childNode.boundVariables;
         if (boundVariables) {
-          await processBoundVariables(childNode, boundVariables, theme);
+          await processLayersWithVariables(childNode, boundVariables, theme);
         }
       }
     }
@@ -44,34 +46,40 @@ const processInstanceNode = async (
 
 const processNode = async (node: SceneNode, theme: Theme) => {
   try {
-    const boundVariables = node.boundVariables;
+    const layersWithVariables = node.boundVariables;
 
     if ('componentProperties' in node) {
       await processComponentProperties(node, theme);
     }
 
-    if (boundVariables && !boundVariables.componentProperties) {
-      await processBoundVariables(node, boundVariables, theme);
+    if (layersWithVariables && !layersWithVariables.componentProperties) {
+      await processLayersWithVariables(node, layersWithVariables, theme);
     }
   } catch (error) {
     console.error('Error processing node:', node, error);
   }
 };
 
-const processBoundVariables = async (
+const processLayersWithVariables = async (
   node: SceneNode,
-  boundVariables: Record<string, any>,
+  layersWithVariables: Record<string, any>,
   theme: Theme
 ) => {
-  for (const [property, boundByNodes] of Object.entries(boundVariables)) {
-    if (boundByNodes) {
-      const variableRefs = Array.isArray(boundByNodes)
-        ? boundByNodes
-        : [boundByNodes];
+  // For each layer
+  for (const [propertyName, boundVariables] of Object.entries(
+    layersWithVariables
+  )) {
+    if (boundVariables) {
+      const variableRefs = Array.isArray(boundVariables)
+        ? boundVariables
+        : [boundVariables];
       for (const variableRef of variableRefs) {
         if (variableRef.type === 'VARIABLE_ALIAS') {
-          const config = await createVariableConfig(node, variableRef);
-          await applyVariable(node, property, theme, config);
+          const sourceVariableConfig = await createSourceVariableConfig(
+            node,
+            variableRef
+          );
+          await applyVariable(node, theme, propertyName, sourceVariableConfig);
         }
       }
     }
@@ -87,9 +95,9 @@ const processComponentProperties = async (node: InstanceNode, theme: Theme) => {
     if (property.boundVariables && property.boundVariables.value) {
       const variableRef = property.boundVariables.value;
       if (variableRef.type === 'VARIABLE_ALIAS') {
-        const config = await createVariableConfig(node, variableRef);
+        const config = await createSourceVariableConfig(node, variableRef);
         const collection = theme.collections.find(
-          (c) => c.name === config.collection
+          (c) => c.name === config.collectionName
         );
         const variable = collection!.variables?.find(
           (v) => v.name === config.path
@@ -105,13 +113,12 @@ const processComponentProperties = async (node: InstanceNode, theme: Theme) => {
   }
 };
 
-const createVariableConfig = async (
+const createSourceVariableConfig = async (
   node: SceneNode,
   variableRef: any
 ): Promise<VariableConfig> => {
   const variableId = variableRef.id as string;
   const variable = figma.variables.getVariableById(variableId);
-
   const collectionId = variable?.variableCollectionId as string;
   const collection = await figma.variables.getVariableCollectionByIdAsync(
     collectionId
@@ -123,52 +130,81 @@ const createVariableConfig = async (
   );
 
   return {
-    collection: collection!.name,
+    collectionName: collection!.name,
+    explicitModes,
     path: variable!.name,
-    explicitModes: explicitModes,
+    variable: variable!,
   };
+};
+
+const applyPaints = (
+  node: SceneNode,
+  propertyName: 'fills' | 'strokes',
+  sourceConfig: VariableConfig,
+  targetVariable: Variable
+) => {
+  const defaultColor = '#000';
+  let paint = figma.util.solidPaint(defaultColor);
+  paint = figma.variables.setBoundVariableForPaint(
+    paint,
+    'color',
+    targetVariable
+  );
+
+  const paints = (node as GeometryMixin)[propertyName] as readonly Paint[];
+
+  (node as GeometryMixin)[propertyName] = paints.map((paintItem: Paint) => {
+    if (
+      'boundVariables' in paintItem &&
+      paintItem.boundVariables?.color?.id === sourceConfig.variable.id
+    ) {
+      return paint;
+    }
+    return paintItem;
+  }) as readonly Paint[];
 };
 
 const applyVariable = async (
   node: SceneNode,
-  nodeProperty: string,
   theme: Theme,
-  config: VariableConfig
+  propertyName: string,
+  sourceConfig: VariableConfig
 ) => {
-  if (!node.setBoundVariable) return;
-
-  const collection = theme.collections.find(
-    (c) => c.name === config.collection
+  const targetCollection = theme.collections.find(
+    (c) => c.name === sourceConfig.collectionName
   );
-  const variable = collection!.variables?.find((v) => v.name === config.path);
+  const targetVariable = targetCollection?.variables?.find(
+    (v) => v.name === sourceConfig.path
+  );
 
-  // Switch any white-label variables with variables from the selected theme
-  // Fills and strokes are SolidPaints. A new SolidPaint must be created and applied.
-  if (nodeProperty === 'fills' || nodeProperty === 'strokes') {
-    const paints = (node as GeometryMixin)[nodeProperty] as SolidPaint[];
+  if (!targetVariable) {
+    Log.append(`Variable not found for path: ${sourceConfig.path}`);
+    return; // Exit the function if targetVariable is undefined
+  }
 
-    const fill = figma.variables.setBoundVariableForPaint(
-      paints[0],
-      'color',
-      variable!
+  if (propertyName === 'fills' || propertyName === 'strokes') {
+    applyPaints(
+      node,
+      propertyName as 'fills' | 'strokes',
+      sourceConfig,
+      targetVariable
     );
-
-    if ('fills' in node) {
-      node.fills = [fill] as readonly Paint[];
-    }
   } else {
-    node.setBoundVariable(nodeProperty as VariableBindableNodeField, variable!);
+    node.setBoundVariable(
+      propertyName as VariableBindableNodeField,
+      targetVariable
+    );
   }
 
   // Set the explicit modes when applicable
-  if (config.explicitModes) {
-    for (const explicitMode of config.explicitModes) {
-      const modeId = collection?.collection.modes?.find(
+  if (sourceConfig.explicitModes) {
+    for (const explicitMode of sourceConfig.explicitModes) {
+      const modeId = targetCollection?.collection.modes?.find(
         (m) => m.name === explicitMode
       )?.modeId;
       try {
         node.setExplicitVariableModeForCollection(
-          collection!.collection! as VariableCollection,
+          targetCollection!.collection! as VariableCollection,
           modeId!
         );
       } catch (error) {}

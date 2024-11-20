@@ -1,6 +1,6 @@
 import { Theme } from './themes';
 
-const handleToggleFavorite = (theme: Theme) => {
+const onToggleFavorite = (theme: Theme) => {
   if (theme.favorite) {
     figma.clientStorage.setAsync(theme.name, true);
   } else {
@@ -8,8 +8,4 @@ const handleToggleFavorite = (theme: Theme) => {
   }
 };
 
-const handleApplyTheme = (theme: Theme) => {
-  // save the theme to the local storage
-};
-
-export { handleToggleFavorite, handleApplyTheme };
+export { onToggleFavorite };

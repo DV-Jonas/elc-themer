@@ -2,10 +2,10 @@ import '!./styles/output.css';
 import { render } from '@create-figma-plugin/ui';
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
-import { on } from '@create-figma-plugin/utilities';
 import { Theme } from './themes';
-import Instructions from './components/instructions';
+import Header from './components/header';
 import Themes from './components/themes';
+import { on } from '@create-figma-plugin/utilities';
 
 function Plugin() {
   const [themes, setThemes] = useState<Theme[]>([]);
@@ -13,7 +13,7 @@ function Plugin() {
 
   return (
     <div class='flex flex-col divide-current dark:divide-dark divide-y h-full'>
-      <Instructions />
+      <Header />
       <Themes themes={themes} />
     </div>
   );
