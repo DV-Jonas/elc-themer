@@ -1,23 +1,30 @@
-import { emit } from '@create-figma-plugin/utilities';
-import { LOG_UPDATED } from './events';
-const LOG_KEY = 'LOG';
+// import { emit } from '@create-figma-plugin/utilities';
+// import { LOG_UPDATED } from './events';
+// const LOG_KEY = 'LOG';
 
-const Log = {
-  clear: async (message?: string) => {
-    const clearLog: string[] = [];
-    await figma.clientStorage.setAsync(LOG_KEY, clearLog);
-    emit(LOG_UPDATED, clearLog);
-  },
+// const Log = {
+//   clear: async () => {
+//     const clearLog: string[] = [];
+//     await figma.clientStorage.setAsync(LOG_KEY, clearLog);
+//     emit(LOG_UPDATED, clearLog);
+//   },
 
-  append: async (message: string) => {
-    let existingLog = await figma.clientStorage.getAsync(LOG_KEY);
-    if (!existingLog) existingLog = [];
-    existingLog.push(message);
+//   append: async (message: string) => {
+//     // Retrieve existing log
+//     let existingLog = await figma.clientStorage.getAsync(LOG_KEY);
+//     if (!existingLog) {
+//       existingLog = [];
+//     }
 
-    await figma.clientStorage.setAsync(LOG_KEY, existingLog);
+//     // Append new message
+//     existingLog.push(message);
 
-    emit(LOG_UPDATED, existingLog);
-  },
-};
+//     // Store updated log
+//     await figma.clientStorage.setAsync(LOG_KEY, existingLog);
+//   },
+//   content: async () => {
+//     return await figma.clientStorage.getAsync(LOG_KEY);
+//   },
+// };
 
-export default Log;
+// export default Log;

@@ -1,8 +1,13 @@
 import { showUI, emit, on } from '@create-figma-plugin/utilities';
 import { loadThemesAsync, Theme } from './themes';
 import applyTheme from './themers/themer';
-import Log from './log';
-import { TOGGLE_FAVORITE, THEMES, APPLY_THEME, THEME_APPLIED } from './events';
+import {
+  TOGGLE_FAVORITE,
+  THEMES,
+  APPLY_THEME,
+  THEME_APPLIED,
+  LOG_UPDATED,
+} from './events';
 import tokens from '../tokens.json';
 import { onToggleFavorite as onToggleFavoriteHandler } from './handlers';
 
@@ -16,10 +21,13 @@ export default async function () {
   };
 
   const onApplyTheme = async (themeName: string) => {
-    Log.clear();
-    const selectedTheme = themes.find((t) => t.name === themeName);
-    await applyTheme(selectedTheme!);
-    emit(THEME_APPLIED);
+    emit(LOG_UPDATED, []);
+    // Timeout is needed let the UI update before applying the theme (theme is a blocking call)
+    setTimeout(async () => {
+      const selectedTheme = themes.find((t) => t.name === themeName);
+      await applyTheme(selectedTheme!);
+      emit(THEME_APPLIED);
+    }, 100);
   };
 
   showUI({

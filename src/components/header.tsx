@@ -30,7 +30,7 @@ const Header = () => {
       <span>Select your frames, choose the brand, and click Apply</span>
 
       <Button onClick={handleOpenButtonClick} variant='secondary' size='sm'>
-        Log {log.length > 0 ? `(${log.length.toString()})` : ''}
+        Log {log.length > 0 ? `(*)` : ''}
       </Button>
 
       {open && (
@@ -39,7 +39,9 @@ const Header = () => {
             {log.length === 0 ? (
               <div>No entries</div>
             ) : (
-              log.map((entry, index) => <div key={index}>{entry}</div>)
+              Array.from(new Set(log)).map((entry, index) => (
+                <div key={index}>{entry}</div>
+              ))
             )}
           </div>
         </Modal>

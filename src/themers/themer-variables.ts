@@ -1,5 +1,4 @@
 import { Theme } from '../themes';
-import Log from 'src/log';
 
 type VariableConfig = {
   collectionName: string;
@@ -8,8 +7,10 @@ type VariableConfig = {
   variable: Variable;
 };
 
+const log: string[] = [];
+
 const themer = async (nodes: SceneNode[], theme: Theme) => {
-  for (const node of nodes) {
+  const promises = nodes.map(async (node) => {
     try {
       if (node.type === 'INSTANCE' || node.type === 'FRAME') {
         await processInstanceNode(node as InstanceNode, theme);
@@ -17,9 +18,12 @@ const themer = async (nodes: SceneNode[], theme: Theme) => {
         await processNode(node, theme);
       }
     } catch (error) {
-      console.error('Error processing node:', node, error);
+      log.push(`${error}`);
     }
-  }
+  });
+  await Promise.all(promises);
+
+  return log;
 };
 
 const processInstanceNode = async (
@@ -29,7 +33,7 @@ const processInstanceNode = async (
   try {
     await processNode(instanceNode, theme); // Process the instance node itself
 
-    for (const childNode of instanceNode.children) {
+    const promises = instanceNode.children.map(async (childNode) => {
       if (childNode.type === 'INSTANCE' || childNode.type === 'FRAME') {
         await processInstanceNode(childNode as InstanceNode, theme);
       } else {
@@ -38,9 +42,10 @@ const processInstanceNode = async (
           await processLayersWithVariables(childNode, boundVariables, theme);
         }
       }
-    }
+    });
+    await Promise.all(promises);
   } catch (error) {
-    console.error('Error processing instance node:', instanceNode, error);
+    log.push(`${error}`);
   }
 };
 
@@ -56,7 +61,7 @@ const processNode = async (node: SceneNode, theme: Theme) => {
       await processLayersWithVariables(node, layersWithVariables, theme);
     }
   } catch (error) {
-    console.error('Error processing node:', node, error);
+    log.push(`${error}`);
   }
 };
 
@@ -65,49 +70,56 @@ const processLayersWithVariables = async (
   layersWithVariables: Record<string, any>,
   theme: Theme
 ) => {
-  // For each layer
-  for (const [propertyName, boundVariables] of Object.entries(
-    layersWithVariables
-  )) {
-    if (boundVariables) {
-      const variableRefs = Array.isArray(boundVariables)
-        ? boundVariables
-        : [boundVariables];
-      for (const variableRef of variableRefs) {
-        if (variableRef.type === 'VARIABLE_ALIAS') {
-          const sourceVariableConfig = await createSourceVariableConfig(
-            node,
-            variableRef
-          );
-          await applyVariable(node, theme, propertyName, sourceVariableConfig);
+  const promises = Object.entries(layersWithVariables).map(
+    async ([propertyName, boundVariables]) => {
+      if (boundVariables) {
+        const variableRefs = Array.isArray(boundVariables)
+          ? boundVariables
+          : [boundVariables];
+        for (const variableRef of variableRefs) {
+          if (variableRef.type === 'VARIABLE_ALIAS') {
+            const sourceVariableConfig = await createSourceVariableConfig(
+              node,
+              variableRef
+            );
+            await applyVariable(
+              node,
+              theme,
+              propertyName,
+              sourceVariableConfig
+            );
+          }
         }
       }
     }
-  }
+  );
+  await Promise.all(promises);
 };
 
 const processComponentProperties = async (node: InstanceNode, theme: Theme) => {
   const propertiesToUpdate: Record<string, any> = {};
 
-  for (const [propertyName, property] of Object.entries(
-    node.componentProperties
-  )) {
-    if (property.boundVariables && property.boundVariables.value) {
-      const variableRef = property.boundVariables.value;
-      if (variableRef.type === 'VARIABLE_ALIAS') {
-        const config = await createSourceVariableConfig(node, variableRef);
-        const collection = theme.collections.find(
-          (c) => c.name === config.collectionName
-        );
-        const variable = collection!.variables?.find(
-          (v) => v.name === config.path
-        );
+  const promises = Object.entries(node.componentProperties).map(
+    async ([propertyName, property]) => {
+      if (property.boundVariables && property.boundVariables.value) {
+        const variableRef = property.boundVariables.value;
+        if (variableRef.type === 'VARIABLE_ALIAS') {
+          const config = await createSourceVariableConfig(node, variableRef);
+          const collection = theme.collections.find(
+            (c) => c.name === config.collectionName
+          );
+          const variable = collection!.variables?.find(
+            (v) => v.name === config.path
+          );
 
-        const variableAlias = figma.variables.createVariableAlias(variable!);
-        propertiesToUpdate[propertyName] = variableAlias;
+          const variableAlias = figma.variables.createVariableAlias(variable!);
+          propertiesToUpdate[propertyName] = variableAlias;
+        }
       }
     }
-  }
+  );
+  await Promise.all(promises);
+
   if (Object.keys(propertiesToUpdate).length > 0) {
     node.setProperties(propertiesToUpdate);
   }
@@ -178,8 +190,8 @@ const applyVariable = async (
   );
 
   if (!targetVariable) {
-    Log.append(`Variable not found for path: ${sourceConfig.path}`);
-    return; // Exit the function if targetVariable is undefined
+    // Log.append(`Variable not found for path: ${sourceConfig.path}`);
+    throw new Error(`Variable not found for path: ${sourceConfig.path}`);
   }
 
   if (propertyName === 'fills' || propertyName === 'strokes') {
