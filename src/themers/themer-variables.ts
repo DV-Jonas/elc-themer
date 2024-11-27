@@ -15,8 +15,6 @@ let processNodeCount = 0; // Counter for processNode
 let applyVariableCount = 0; // Counter for applyVariable
 
 const themer = async (nodes: SceneNode[], theme: Theme) => {
-  console.log('themer variables: node length', nodes.length);
-  console.log('themer variables: theme', theme);
   const promises = nodes.map(async (node) => {
     try {
       if (node.type === 'INSTANCE' || node.type === 'FRAME') {
@@ -29,9 +27,6 @@ const themer = async (nodes: SceneNode[], theme: Theme) => {
     }
   });
   await Promise.all(promises);
-
-  console.log(`Total processNode calls: ${processNodeCount}`);
-  console.log(`Total applyVariable calls: ${applyVariableCount}`);
 
   processNodeCount = 0; // Counter for processNode
   applyVariableCount = 0;

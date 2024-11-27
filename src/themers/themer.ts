@@ -5,16 +5,12 @@ import variablesThemer from './themer-variables';
 import { emit } from '@create-figma-plugin/utilities';
 
 const applyTheme = async (theme: Theme) => {
-  const nodes =
-    figma.currentPage.selection.length > 0
-      ? figma.currentPage.selection.flatMap((node) =>
-          (node as any).children ? [node, ...(node as any).children] : [node]
-        )
-      : figma.currentPage.findAll();
+  console.log('applyTheme', figma.currentPage.selection);
+  const nodes = figma.currentPage.selection.filter((n) => n.visible);
+  // : figma.currentPage.findAll((n) => n.visible);
 
   const mutableNodes = [...nodes]; // Create a mutable copy of the nodes array
 
-  console.log('APPLY THEME');
   await metaDataThemer(mutableNodes, theme);
   const log = await variablesThemer(mutableNodes, theme);
   emit(LOG_UPDATED, log);

@@ -108,4 +108,41 @@ const defer = async (callback: () => Promise<void>) => {
   });
 };
 
-export { parseCSSGradient, detectGradientType, fetchTeamComponents, defer };
+const flattenNodes = (nodes: SceneNode[]): SceneNode[] => {
+  let allNodes: SceneNode[] = [];
+
+  nodes.forEach((node) => {
+    allNodes.push(node);
+    if (
+      (node.type === 'INSTANCE' || node.type === 'FRAME') &&
+      'children' in node
+    ) {
+      const childNodes = explodeNode(node);
+      allNodes = allNodes.concat(childNodes);
+    }
+  });
+  return allNodes;
+};
+
+const explodeNode = (instance: InstanceNode | FrameNode): SceneNode[] => {
+  let nodes: SceneNode[] = [];
+  instance.children.forEach((child) => {
+    if (child.visible) {
+      if (child.type === 'INSTANCE' || child.type === 'FRAME') {
+        nodes.push(child);
+        nodes = nodes.concat(explodeNode(child));
+      } else {
+        nodes.push(child);
+      }
+    }
+  });
+  return nodes;
+};
+
+export {
+  parseCSSGradient,
+  detectGradientType,
+  fetchTeamComponents,
+  defer,
+  flattenNodes,
+};

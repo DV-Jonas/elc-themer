@@ -12,7 +12,6 @@ import tokens from '../tokens.json';
 import { onToggleFavorite as onToggleFavoriteHandler } from './handlers';
 
 export default async function () {
-  console.log('MAIN.TSX: START()');
   let themes = await loadThemesAsync();
 
   const onToggleFavorite = async (theme: Theme) => {

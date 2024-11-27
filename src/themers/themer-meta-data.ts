@@ -1,4 +1,4 @@
-import { fetchTeamComponents, parseCSSGradient } from 'src/util';
+import { flattenNodes, parseCSSGradient } from 'src/util';
 import { Theme } from '../themes';
 import config from 'config';
 
@@ -9,7 +9,10 @@ type Token = {
 };
 
 const themer = async (nodes: SceneNode[], theme: Theme) => {
-  const nodesWithMetadata = nodes.filter((node) =>
+  // Filter for visible nodes first
+  const visibleNodes = nodes.filter((node) => node.visible);
+  const allNodes = flattenNodes(visibleNodes); // Pass visible nodes to getAllNodes
+  const nodesWithMetadata = allNodes.filter((node) =>
     node.getSharedPluginDataKeys(config.namespace).includes(config.key)
   );
 
@@ -22,8 +25,8 @@ const themer = async (nodes: SceneNode[], theme: Theme) => {
       JSON.parse(tokensAsString);
     if (node.type === 'TEXT') {
       await applyTextStyle(node, theme, textDecoration, textTransform);
-    } else if (node.name.includes('icon-')) {
-      // applyIconSwap(node, theme, icon);
+    } else if (node.name.includes(config.iconPrefix)) {
+      applyIconSwap(node, theme, icon);
     } else {
       await applyGradientOverlay(node, theme, gradientOverlay);
     }
@@ -130,41 +133,52 @@ const applyGradientOverlay = async (
   }
 };
 
-const applyIconSwap = async (
-  node: SceneNode,
-  theme: Theme,
-  token: Token,
-  teamId: string,
-  apiKey: string
-) => {
+const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
+  console.log('applying icon swap');
   if (!token?.shouldTheme) {
     return;
   }
+  // Get variable reference from theme
+  const collection = theme.collections.find((c) => c.name === token.collection);
+  const collectionValues = collection!.variables!;
+  const variable = collectionValues.find(
+    (v) => v.name === config.iconPath + node.name
+  );
 
-  const componentName = node.name;
+  if (!variable) {
+    console.warn(`Variable not found for path: ${config.iconPath + node.name}`);
+    return;
+  }
 
-  try {
-    const components = await fetchTeamComponents(teamId, apiKey);
-    const componentData = components.find((c: any) => c.name === componentName);
-
-    if (componentData) {
-      const componentNode = await figma.importComponentByKeyAsync(
-        componentData.key
-      );
-      const newInstance = componentNode.createInstance();
-      newInstance.x = node.x;
-      newInstance.y = node.y;
-      newInstance.resize(node.width, node.height);
-      node.parent?.appendChild(newInstance);
-      node.remove();
-    } else {
-      console.error(
-        `Component with name ${componentName} not found in the team library.`
+  //// Fetch component from team library
+  // First we get the component key from the variable
+  const componentKey = variable.resolveForConsumer(node).value;
+  // Then we fetch the component set from the team library
+  const componentSet = await figma.importComponentSetByKeyAsync(
+    componentKey as string
+  );
+  if (!componentSet) {
+    console.error(`Component not found for key: ${componentKey}`);
+    return;
+  }
+  // Then we find the variant that matches the node's current variant
+  const variantProps = (node as InstanceNode).variantProperties;
+  const component = (componentSet.children.find((child) => {
+    if ('variantProperties' in child) {
+      return (
+        JSON.stringify(child.variantProperties) === JSON.stringify(variantProps)
       );
     }
-  } catch (error) {
-    console.error('Error fetching components:', error);
+    return false;
+  }) || componentSet.defaultVariant) as ComponentNode;
+
+  if (!component) {
+    console.error(`No matching variant found and no default variant available`);
+    return;
   }
+
+  // Then we swap the component
+  (node as InstanceNode).swapComponent(component);
 };
 
 export default themer;
