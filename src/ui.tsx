@@ -8,6 +8,7 @@ import Themes from './components/themes';
 import { on } from '@create-figma-plugin/utilities';
 
 function Plugin() {
+  console.log('UI.TSX: Plugin()');
   const [themes, setThemes] = useState<Theme[]>([]);
   on('THEMES', setThemes);
 

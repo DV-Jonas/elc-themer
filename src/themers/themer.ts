@@ -14,6 +14,7 @@ const applyTheme = async (theme: Theme) => {
 
   const mutableNodes = [...nodes]; // Create a mutable copy of the nodes array
 
+  console.log('APPLY THEME');
   await metaDataThemer(mutableNodes, theme);
   const log = await variablesThemer(mutableNodes, theme);
   emit(LOG_UPDATED, log);

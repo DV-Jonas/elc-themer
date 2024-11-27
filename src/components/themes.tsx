@@ -2,7 +2,12 @@ import { h, Fragment } from 'preact';
 import { Theme } from '../themes';
 import List from './list';
 import { Star } from 'lucide-preact';
-import { TOGGLE_FAVORITE, APPLY_THEME, THEME_APPLIED } from '../events';
+import {
+  TOGGLE_FAVORITE,
+  APPLY_THEME,
+  THEME_APPLIED,
+  THEME_PROGRESS,
+} from '../events';
 import { emit, on } from '@create-figma-plugin/utilities';
 import Button from './button';
 import { useState } from 'preact/hooks';
@@ -14,8 +19,11 @@ type Props = {
 const Themes = ({ themes }: Props) => {
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
   const [loading, setLoading] = useState(false);
+  const buttonLabel = 'Apply theme';
+  const [dynamicButtonLabel, setDynamicButtonLabel] = useState(buttonLabel);
 
   on(THEME_APPLIED, () => setLoading(false));
+  on(THEME_PROGRESS, (progress) => setDynamicButtonLabel(progress));
 
   const onSelectedTheme = (theme: Theme) => {
     setSelectedTheme((prevTheme) => (prevTheme === theme ? null : theme));
@@ -58,13 +66,21 @@ const Themes = ({ themes }: Props) => {
           );
         })}
       </List.Root>
-      <Button
-        onClick={onApplyTheme}
-        disabled={!selectedTheme}
-        loading={loading}
-      >
-        Apply theme
-      </Button>
+      <div className='flex flex-col gap-2 w-full items-center'>
+        {loading && (
+          <div className='text-on-surface-variant'>
+            <span>Applying theme (this might take a while)</span>
+          </div>
+        )}
+        <Button
+          onClick={onApplyTheme}
+          fullWidth
+          disabled={!selectedTheme}
+          loading={loading}
+        >
+          {loading ? dynamicButtonLabel : buttonLabel}
+        </Button>
+      </div>
     </div>
   );
 };

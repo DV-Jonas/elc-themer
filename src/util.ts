@@ -99,4 +99,13 @@ const fetchTeamComponents = async (teamId: string, apiKey: string) => {
   return data.meta.components;
 };
 
-export { parseCSSGradient, detectGradientType, fetchTeamComponents };
+const defer = async (callback: () => Promise<void>) => {
+  return new Promise<void>((resolve) => {
+    setTimeout(async () => {
+      await callback();
+      resolve();
+    }, 1);
+  });
+};
+
+export { parseCSSGradient, detectGradientType, fetchTeamComponents, defer };

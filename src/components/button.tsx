@@ -39,7 +39,7 @@ const Button = ({
       {loading ? (
         <div class='flex flow-row items-center gap-2 justify-center'>
           <Loader2 className='animate-spin' size={16} />
-          <span>Applying theme...</span>
+          {children}
         </div>
       ) : (
         children

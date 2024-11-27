@@ -1,4 +1,7 @@
+import { emit } from '@create-figma-plugin/utilities';
+import { THEME_PROGRESS } from 'src/events';
 import { Theme } from '../themes';
+import { defer } from 'src/util';
 
 type VariableConfig = {
   collectionName: string;
@@ -8,8 +11,12 @@ type VariableConfig = {
 };
 
 const log: string[] = [];
+let processNodeCount = 0; // Counter for processNode
+let applyVariableCount = 0; // Counter for applyVariable
 
 const themer = async (nodes: SceneNode[], theme: Theme) => {
+  console.log('themer variables: node length', nodes.length);
+  console.log('themer variables: theme', theme);
   const promises = nodes.map(async (node) => {
     try {
       if (node.type === 'INSTANCE' || node.type === 'FRAME') {
@@ -22,6 +29,12 @@ const themer = async (nodes: SceneNode[], theme: Theme) => {
     }
   });
   await Promise.all(promises);
+
+  console.log(`Total processNode calls: ${processNodeCount}`);
+  console.log(`Total applyVariable calls: ${applyVariableCount}`);
+
+  processNodeCount = 0; // Counter for processNode
+  applyVariableCount = 0;
 
   return log;
 };
@@ -50,19 +63,23 @@ const processInstanceNode = async (
 };
 
 const processNode = async (node: SceneNode, theme: Theme) => {
-  try {
-    const layersWithVariables = node.boundVariables;
+  processNodeCount++; // Increment the processNode counter
+  emit(THEME_PROGRESS, node.name);
+  await defer(async () => {
+    try {
+      const layersWithVariables = node.boundVariables;
 
-    if ('componentProperties' in node) {
-      await processComponentProperties(node, theme);
-    }
+      if ('componentProperties' in node) {
+        await processComponentProperties(node, theme);
+      }
 
-    if (layersWithVariables && !layersWithVariables.componentProperties) {
-      await processLayersWithVariables(node, layersWithVariables, theme);
+      if (layersWithVariables && !layersWithVariables.componentProperties) {
+        await processLayersWithVariables(node, layersWithVariables, theme);
+      }
+    } catch (error) {
+      log.push(`${error}`);
     }
-  } catch (error) {
-    log.push(`${error}`);
-  }
+  });
 };
 
 const processLayersWithVariables = async (
@@ -182,6 +199,7 @@ const applyVariable = async (
   propertyName: string,
   sourceConfig: VariableConfig
 ) => {
+  applyVariableCount++; // Increment the applyVariable counter
   const targetCollection = theme.collections.find(
     (c) => c.name === sourceConfig.collectionName
   );
