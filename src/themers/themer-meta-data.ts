@@ -8,11 +8,13 @@ type Token = {
   collection: string;
 };
 
+let log: string[] = [];
+
 const themer = async (nodes: SceneNode[], theme: Theme) => {
+  log = [];
+
   // Filter for visible nodes first
-  const visibleNodes = nodes.filter((node) => node.visible);
-  const allNodes = flattenNodes(visibleNodes); // Pass visible nodes to getAllNodes
-  const nodesWithMetadata = allNodes.filter((node) =>
+  const nodesWithMetadata = nodes.filter((node) =>
     node.getSharedPluginDataKeys(config.namespace).includes(config.key)
   );
 
@@ -31,6 +33,8 @@ const themer = async (nodes: SceneNode[], theme: Theme) => {
       await applyGradientOverlay(node, theme, gradientOverlay);
     }
   }
+
+  return log;
 };
 
 const applyTextStyle = async (
@@ -126,7 +130,7 @@ const applyGradientOverlay = async (
     (node as GeometryMixin).fills = [...existingFills, gradientPaint];
   } else {
     // Handle the case where fills is figma.mixed or another unexpected type
-    console.warn(
+    log.push(
       'Fills are mixed or not an array, applying gradient as the only fill.'
     );
     (node as GeometryMixin).fills = [gradientPaint];
@@ -146,7 +150,7 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
   );
 
   if (!variable) {
-    console.warn(`Variable not found for path: ${config.iconPath + node.name}`);
+    log.push(`Variable not found for path: ${config.iconPath + node.name}`);
     return;
   }
 
@@ -158,7 +162,7 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
     componentKey as string
   );
   if (!componentSet) {
-    console.error(`Component not found for key: ${componentKey}`);
+    log.push(`Variable not found for path: ${config.iconPath + node.name}`);
     return;
   }
   // Then we find the variant that matches the node's current variant
@@ -173,7 +177,7 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
   }) || componentSet.defaultVariant) as ComponentNode;
 
   if (!component) {
-    console.error(`No matching variant found and no default variant available`);
+    log.push(`No matching variant found and no default variant available`);
     return;
   }
 

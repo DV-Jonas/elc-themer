@@ -1,7 +1,7 @@
 import { emit } from '@create-figma-plugin/utilities';
 import { THEME_PROGRESS } from 'src/events';
 import { Theme } from '../themes';
-import { defer } from 'src/util';
+import { defer, flattenNodes } from 'src/util';
 
 type VariableConfig = {
   collectionName: string;
@@ -10,55 +10,22 @@ type VariableConfig = {
   variable: Variable;
 };
 
-const log: string[] = [];
-let processNodeCount = 0; // Counter for processNode
-let applyVariableCount = 0; // Counter for applyVariable
+let log: string[] = [];
 
 const themer = async (nodes: SceneNode[], theme: Theme) => {
-  const promises = nodes.map(async (node) => {
+  log = [];
+  for (const node of nodes) {
     try {
-      if (node.type === 'INSTANCE' || node.type === 'FRAME') {
-        await processInstanceNode(node as InstanceNode, theme);
-      } else {
-        await processNode(node, theme);
-      }
+      await processNode(node, theme);
     } catch (error) {
       log.push(`${error}`);
     }
-  });
-  await Promise.all(promises);
-
-  processNodeCount = 0; // Counter for processNode
-  applyVariableCount = 0;
+  }
 
   return log;
 };
 
-const processInstanceNode = async (
-  instanceNode: InstanceNode,
-  theme: Theme
-) => {
-  try {
-    await processNode(instanceNode, theme); // Process the instance node itself
-
-    const promises = instanceNode.children.map(async (childNode) => {
-      if (childNode.type === 'INSTANCE' || childNode.type === 'FRAME') {
-        await processInstanceNode(childNode as InstanceNode, theme);
-      } else {
-        const boundVariables = childNode.boundVariables;
-        if (boundVariables) {
-          await processLayersWithVariables(childNode, boundVariables, theme);
-        }
-      }
-    });
-    await Promise.all(promises);
-  } catch (error) {
-    log.push(`${error}`);
-  }
-};
-
 const processNode = async (node: SceneNode, theme: Theme) => {
-  processNodeCount++; // Increment the processNode counter
   emit(THEME_PROGRESS, node.name);
   await defer(async () => {
     try {
@@ -194,7 +161,6 @@ const applyVariable = async (
   propertyName: string,
   sourceConfig: VariableConfig
 ) => {
-  applyVariableCount++; // Increment the applyVariable counter
   const targetCollection = theme.collections.find(
     (c) => c.name === sourceConfig.collectionName
   );

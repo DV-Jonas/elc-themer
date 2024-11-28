@@ -104,7 +104,7 @@ const defer = async (callback: () => Promise<void>) => {
     setTimeout(async () => {
       await callback();
       resolve();
-    }, 1);
+    }, 2);
   });
 };
 
