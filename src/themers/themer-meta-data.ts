@@ -63,6 +63,10 @@ const applyTextStyleProperty = async (
     );
     const collectionValues = collection!.variables!;
     const variable = collectionValues.find((v) => v.name === token.path);
+    if (!variable) {
+      log.push(`Variable not found for path: ${token.path}`);
+      return;
+    }
     const variableValue = variable!.resolveForConsumer(node).value;
 
     const fontName = (node as TextNode).fontName as FontName;
@@ -90,6 +94,11 @@ const applyGradientOverlay = async (
   const collection = theme.collections.find((c) => c.name === token.collection);
   const collectionValues = collection!.variables!;
   const variable = collectionValues.find((v) => v.name === token.path);
+  if (!variable) {
+    log.push(`Variable not found for path: ${token.path}`);
+    return;
+  }
+
   const variableValue = variable!.resolveForConsumer(node).value as string;
 
   if (variableValue === 'NONE') {

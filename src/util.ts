@@ -114,7 +114,9 @@ const flattenNodes = (nodes: SceneNode[]): SceneNode[] => {
   nodes.forEach((node) => {
     allNodes.push(node);
     if (
-      (node.type === 'INSTANCE' || node.type === 'FRAME') &&
+      (node.type === 'INSTANCE' ||
+        node.type === 'FRAME' ||
+        node.type === 'GROUP') &&
       'children' in node
     ) {
       const childNodes = explodeNode(node);
@@ -124,11 +126,17 @@ const flattenNodes = (nodes: SceneNode[]): SceneNode[] => {
   return allNodes;
 };
 
-const explodeNode = (instance: InstanceNode | FrameNode): SceneNode[] => {
+const explodeNode = (
+  instance: InstanceNode | FrameNode | GroupNode
+): SceneNode[] => {
   let nodes: SceneNode[] = [];
   instance.children.forEach((child) => {
     if (child.visible) {
-      if (child.type === 'INSTANCE' || child.type === 'FRAME') {
+      if (
+        child.type === 'INSTANCE' ||
+        child.type === 'FRAME' ||
+        child.type === 'GROUP'
+      ) {
         nodes.push(child);
         nodes = nodes.concat(explodeNode(child));
       } else {
