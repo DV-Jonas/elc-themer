@@ -1,7 +1,7 @@
 import { emit } from '@create-figma-plugin/utilities';
 import { THEME_PROGRESS } from 'src/events';
 import { Theme } from '../themes';
-import { defer, flattenNodes } from 'src/util';
+import { defer, ErrorWithPayload, flattenNodes } from 'src/util';
 
 type VariableConfig = {
   collectionName: string;
@@ -10,16 +10,12 @@ type VariableConfig = {
   variable: Variable;
 };
 
-let log: string[] = [];
+let log: ErrorWithPayload[] = [];
 
 const themer = async (nodes: SceneNode[], theme: Theme) => {
   log = [];
   for (const node of nodes) {
-    try {
-      await processNode(node, theme);
-    } catch (error) {
-      log.push(`${error}`);
-    }
+    await processNode(node, theme);
   }
 
   return log;
@@ -39,7 +35,7 @@ const processNode = async (node: SceneNode, theme: Theme) => {
         await processLayersWithVariables(node, layersWithVariables, theme);
       }
     } catch (error) {
-      log.push(`${error}`);
+      log.push(error as ErrorWithPayload);
     }
   });
 };
@@ -155,6 +151,18 @@ const applyPaints = (
   }) as readonly Paint[];
 };
 
+class VariableMissingError extends Error {
+  constructor(
+    public path: string,
+    public collectionName: string,
+    public explicitModes: string[] | null,
+    public nodeName: string
+  ) {
+    super(`Variable missing: ${path}`);
+    this.name = 'VariableMissingError';
+  }
+}
+
 const applyVariable = async (
   node: SceneNode,
   theme: Theme,
@@ -169,8 +177,9 @@ const applyVariable = async (
   );
 
   if (!targetVariable) {
-    // Log.append(`Variable not found for path: ${sourceConfig.path}`);
-    throw new Error(`Variable missing: ${sourceConfig.path}`);
+    throw new ErrorWithPayload(`Unknown variable: ${sourceConfig.path}`, {
+      node: node,
+    });
   }
 
   if (propertyName === 'fills' || propertyName === 'strokes') {

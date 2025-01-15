@@ -1,7 +1,8 @@
 {
   "extends": "@create-figma-plugin/tsconfig",
   "compilerOptions": {
-    "target": "es2015",
+    "target": "es2022",
+    "lib": ["es2022", "dom"],
     "typeRoots": ["node_modules/@figma", "node_modules/@types"],
     "jsx": "react",
     "jsxFactory": "h",

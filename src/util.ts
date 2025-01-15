@@ -114,7 +114,9 @@ const flattenNodes = (nodes: SceneNode[]): SceneNode[] => {
   nodes.forEach((node) => {
     allNodes.push(node);
     if (
-      (node.type === 'INSTANCE' ||
+      (node.type == 'COMPONENT' ||
+        node.type === 'INSTANCE' ||
+        node.type === 'SECTION' ||
         node.type === 'FRAME' ||
         node.type === 'GROUP') &&
       'children' in node
@@ -127,25 +129,57 @@ const flattenNodes = (nodes: SceneNode[]): SceneNode[] => {
 };
 
 const explodeNode = (
-  instance: InstanceNode | FrameNode | GroupNode
+  node: FrameNode | GroupNode | InstanceNode | SectionNode | ComponentNode
 ): SceneNode[] => {
   let nodes: SceneNode[] = [];
-  instance.children.forEach((child) => {
-    if (child.visible) {
-      if (
-        child.type === 'INSTANCE' ||
-        child.type === 'FRAME' ||
-        child.type === 'GROUP'
-      ) {
+  if ('children' in node) {
+    node.children.forEach((child) => {
+      if (child.visible) {
         nodes.push(child);
-        nodes = nodes.concat(explodeNode(child));
-      } else {
-        nodes.push(child);
+        if (
+          (child.type === 'INSTANCE' ||
+            child.type === 'FRAME' ||
+            child.type === 'GROUP' ||
+            child.type === 'COMPONENT' ||
+            child.type === 'SECTION') &&
+          'children' in child
+        ) {
+          nodes = nodes.concat(
+            explodeNode(
+              child as
+                | FrameNode
+                | GroupNode
+                | InstanceNode
+                | SectionNode
+                | ComponentNode
+            )
+          );
+        }
       }
-    }
-  });
+    });
+  }
   return nodes;
 };
+
+class ErrorWithPayload extends Error {
+  cause: {
+    node: SceneNode;
+    message?: string;
+  };
+
+  constructor(
+    message: string,
+    cause: {
+      node: SceneNode;
+      message?: string;
+    }
+  ) {
+    super(message);
+    this.name = 'ErrorWithPayload';
+    this.cause = cause;
+    this.cause.message = message;
+  }
+}
 
 export {
   parseCSSGradient,
@@ -153,4 +187,5 @@ export {
   fetchTeamComponents,
   defer,
   flattenNodes,
+  ErrorWithPayload,
 };

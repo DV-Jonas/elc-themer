@@ -8,4 +8,14 @@ const onToggleFavorite = (theme: Theme) => {
   }
 };
 
-export { onToggleFavorite };
+const onSelectNode = (nodeId: string) => {
+  const node = figma.getNodeById(nodeId);
+  if (node && 'type' in node) {
+    figma.currentPage.selection = [node as SceneNode];
+    figma.viewport.scrollAndZoomIntoView([node as SceneNode]);
+  } else {
+    console.error(`Node with ID ${nodeId} not found or is not a SceneNode.`);
+  }
+};
+
+export { onToggleFavorite, onSelectNode };

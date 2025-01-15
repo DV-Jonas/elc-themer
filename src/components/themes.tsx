@@ -40,32 +40,35 @@ const Themes = ({ themes }: Props) => {
   };
 
   return (
-    <div className='flex flex-col justify-between p-3 flex-grow'>
-      <List.Root>
-        {themes.map((theme, index) => {
-          const isLastFavorited =
-            theme.favorite && themes.slice(index + 1).every((t) => !t.favorite);
+    <div className='flex flex-col justify-between px-3 pb-3 flex-grow'>
+      <div className='h-72 overflow-y-scroll mt-10'>
+        <List.Root>
+          {themes.map((theme, index) => {
+            const isLastFavorited =
+              theme.favorite &&
+              themes.slice(index + 1).every((t) => !t.favorite);
 
-          return (
-            <List.Item
-              key={theme.name}
-              label={theme.name}
-              onClick={() => onSelectedTheme(theme)}
-              selected={theme == selectedTheme}
-              className={isLastFavorited ? 'mb-3' : ''}
-            >
-              <List.Toggle
-                onClick={(isOn) => {
-                  onToggleFavorite(theme, isOn);
-                }}
-                iconOff={Star}
-                iconOn={Star}
-                on={theme.favorite}
-              />
-            </List.Item>
-          );
-        })}
-      </List.Root>
+            return (
+              <List.Item
+                key={theme.name}
+                label={theme.name}
+                onClick={() => onSelectedTheme(theme)}
+                selected={theme == selectedTheme}
+                className={isLastFavorited ? 'mb-3' : ''}
+              >
+                <List.Toggle
+                  onClick={(isOn) => {
+                    onToggleFavorite(theme, isOn);
+                  }}
+                  iconOff={Star}
+                  iconOn={Star}
+                  on={theme.favorite}
+                />
+              </List.Item>
+            );
+          })}
+        </List.Root>
+      </div>
       <div className='flex flex-col gap-2 w-full items-center'>
         {loading && (
           <div className='text-on-surface-variant'>

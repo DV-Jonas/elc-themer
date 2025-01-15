@@ -1,4 +1,4 @@
-import { flattenNodes, parseCSSGradient } from 'src/util';
+import { ErrorWithPayload, flattenNodes, parseCSSGradient } from 'src/util';
 import { Theme } from '../themes';
 import config from 'config';
 
@@ -8,7 +8,7 @@ type Token = {
   collection: string;
 };
 
-let log: string[] = [];
+let log: ErrorWithPayload[] = [];
 
 const themer = async (nodes: SceneNode[], theme: Theme) => {
   log = [];
@@ -64,7 +64,11 @@ const applyTextStyleProperty = async (
     const collectionValues = collection!.variables!;
     const variable = collectionValues.find((v) => v.name === token.path);
     if (!variable) {
-      log.push(`Variable not found for path: ${token.path}`);
+      log.push(
+        new ErrorWithPayload(`Variable not found for path: ${token.path}`, {
+          node: node,
+        })
+      );
       return;
     }
     const variableValue = variable!.resolveForConsumer(node).value;
@@ -95,7 +99,11 @@ const applyGradientOverlay = async (
   const collectionValues = collection!.variables!;
   const variable = collectionValues.find((v) => v.name === token.path);
   if (!variable) {
-    log.push(`Variable not found for path: ${token.path}`);
+    log.push(
+      new ErrorWithPayload(`Variable not found for path: ${token.path}`, {
+        node: node,
+      })
+    );
     return;
   }
 
@@ -140,14 +148,18 @@ const applyGradientOverlay = async (
   } else {
     // Handle the case where fills is figma.mixed or another unexpected type
     log.push(
-      'Fills are mixed or not an array, applying gradient as the only fill.'
+      new ErrorWithPayload(
+        `Fills are mixed or not an array, applying gradient as the only fill`,
+        {
+          node: node,
+        }
+      )
     );
     (node as GeometryMixin).fills = [gradientPaint];
   }
 };
 
 const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
-  console.log('applying icon swap');
   if (!token?.shouldTheme) {
     return;
   }
@@ -159,7 +171,15 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
   );
 
   if (!variable) {
-    log.push(`Variable not found for path: ${config.iconPath + node.name}`);
+    log.push(
+      new ErrorWithPayload(
+        `Variable not found for path: ${config.iconPath + node.name}`,
+        {
+          node: node,
+        }
+      )
+    );
+
     return;
   }
 
@@ -171,7 +191,14 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
     componentKey as string
   );
   if (!componentSet) {
-    log.push(`Variable not found for path: ${config.iconPath + node.name}`);
+    log.push(
+      new ErrorWithPayload(
+        `Variable not found for path: ${config.iconPath + node.name}`,
+        {
+          node: node,
+        }
+      )
+    );
     return;
   }
   // Then we find the variant that matches the node's current variant
@@ -186,7 +213,14 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
   }) || componentSet.defaultVariant) as ComponentNode;
 
   if (!component) {
-    log.push(`No matching variant found and no default variant available`);
+    log.push(
+      new ErrorWithPayload(
+        `No matching variant found and no default variant available`,
+        {
+          node: node,
+        }
+      )
+    );
     return;
   }
 

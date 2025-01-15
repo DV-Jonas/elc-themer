@@ -29,6 +29,11 @@ const Modal = ({ onClose, children, open }: ModalProps) => {
     }
   };
 
+  const stopPropagation = (event: Event) => {
+    event.stopPropagation();
+    event.preventDefault();
+  };
+
   return (
     <div
       className={`w-screen h-screen absolute top-0 left-0 transition-opacity duration-300 ${
@@ -39,6 +44,7 @@ const Modal = ({ onClose, children, open }: ModalProps) => {
       onTransitionEnd={handleTransitionEnd}
     >
       <div
+        onClick={stopPropagation}
         className={`bg-surface text-on-surface h-full transition-transform duration-300 ${
           isVisible && !isClosing
             ? 'transform translate-x-0'

@@ -1,3 +1,5 @@
+import config from 'config';
+
 type Theme = {
   name: string;
   favorite: boolean;
@@ -14,7 +16,8 @@ const loadThemesAsync = async () => {
   const libraryCollections =
     await figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync();
 
-  const groupedCollections = await libraryCollections.reduce(
+  const filteredLibraryCollections = filterThemes(libraryCollections);
+  const groupedCollections = await filteredLibraryCollections.reduce(
     async (accPromise, libraryCollection) => {
       const accumulator = await accPromise;
       const { libraryName, name, key } = libraryCollection;
@@ -67,6 +70,12 @@ const loadThemesAsync = async () => {
     }
     return a.name.localeCompare(b.name);
   });
+};
+
+const filterThemes = (themes: LibraryVariableCollection[]) => {
+  return themes.filter((theme) =>
+    config.collectionNames.includes(theme.name as any)
+  );
 };
 
 export { type Theme, loadThemesAsync };

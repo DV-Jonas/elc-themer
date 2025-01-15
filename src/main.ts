@@ -7,9 +7,13 @@ import {
   APPLY_THEME,
   THEME_APPLIED,
   LOG_UPDATED,
+  SELECT_NODE,
 } from './events';
 import tokens from '../tokens.json';
-import { onToggleFavorite as onToggleFavoriteHandler } from './handlers';
+import {
+  onSelectNode,
+  onToggleFavorite as onToggleFavoriteHandler,
+} from './handlers';
 
 export default async function () {
   let themes = await loadThemesAsync();
@@ -37,6 +41,7 @@ export default async function () {
 
   on(TOGGLE_FAVORITE, onToggleFavorite);
   on(APPLY_THEME, onApplyTheme);
+  on(SELECT_NODE, onSelectNode);
 
   emit(THEMES, themes);
 }
