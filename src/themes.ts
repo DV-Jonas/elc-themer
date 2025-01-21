@@ -64,6 +64,10 @@ const loadThemesAsync = async () => {
 
   const themes = Object.values(groupedCollections);
 
+  return sortThemes(themes);
+};
+
+const sortThemes = (themes: Theme[]) => {
   return themes.sort((a, b) => {
     if (b.favorite !== a.favorite) {
       return b.favorite ? 1 : -1;
@@ -78,4 +82,4 @@ const filterThemes = (themes: LibraryVariableCollection[]) => {
   );
 };
 
-export { type Theme, loadThemesAsync };
+export { type Theme, loadThemesAsync, sortThemes };

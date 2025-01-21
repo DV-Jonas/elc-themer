@@ -1,89 +1,56 @@
-import { h, Fragment } from 'preact';
+import { h } from 'preact';
 import { Theme } from '../themes';
 import List from './list';
 import { Star } from 'lucide-preact';
-import {
-  TOGGLE_FAVORITE,
-  APPLY_THEME,
-  THEME_APPLIED,
-  THEME_PROGRESS,
-} from '../events';
-import { emit, on } from '@create-figma-plugin/utilities';
-import Button from './button';
+import { TOGGLE_FAVORITE } from '../events';
+import { emit } from '@create-figma-plugin/utilities';
 import { useState } from 'preact/hooks';
 
 type Props = {
   themes: Theme[];
+  onSelectTheme: (theme: Theme) => void;
 };
 
-const Themes = ({ themes }: Props) => {
+const Themes = ({ themes, onSelectTheme }: Props) => {
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
-  const [loading, setLoading] = useState(false);
-  const buttonLabel = 'Apply theme';
-  const [dynamicButtonLabel, setDynamicButtonLabel] = useState(buttonLabel);
-
-  on(THEME_APPLIED, () => setLoading(false));
-  on(THEME_PROGRESS, (progress) => setDynamicButtonLabel(progress));
-
-  const onSelectedTheme = (theme: Theme) => {
-    setSelectedTheme((prevTheme) => (prevTheme === theme ? null : theme));
-  };
 
   const onToggleFavorite = (theme: Theme, favorite: boolean) => {
     theme.favorite = favorite;
     emit(TOGGLE_FAVORITE, theme);
   };
 
-  const onApplyTheme = () => {
-    setLoading(true);
-    emit(APPLY_THEME, selectedTheme!.name);
+  const onSelect = (theme: Theme) => {
+    setSelectedTheme(theme);
+    onSelectTheme(theme);
   };
 
   return (
-    <div className='flex flex-col justify-between px-3 pb-3 flex-grow'>
-      <div className='h-72 overflow-y-scroll mt-10'>
-        <List.Root>
-          {themes.map((theme, index) => {
-            const isLastFavorited =
-              theme.favorite &&
-              themes.slice(index + 1).every((t) => !t.favorite);
+    <div className='flex-grow overflow-y-scroll p-3'>
+      <List.Root>
+        {themes.map((theme, index) => {
+          const isLastFavorited =
+            theme.favorite && themes.slice(index + 1).every((t) => !t.favorite);
 
-            return (
-              <List.Item
-                key={theme.name}
-                label={theme.name}
-                onClick={() => onSelectedTheme(theme)}
-                selected={theme == selectedTheme}
-                className={isLastFavorited ? 'mb-3' : ''}
-              >
-                <List.Toggle
-                  onClick={(isOn) => {
-                    onToggleFavorite(theme, isOn);
-                  }}
-                  iconOff={Star}
-                  iconOn={Star}
-                  on={theme.favorite}
-                />
-              </List.Item>
-            );
-          })}
-        </List.Root>
-      </div>
-      <div className='flex flex-col gap-2 w-full items-center'>
-        {loading && (
-          <div className='text-on-surface-variant'>
-            <span>Applying theme (this might take a while)</span>
-          </div>
-        )}
-        <Button
-          onClick={onApplyTheme}
-          fullWidth
-          disabled={!selectedTheme}
-          loading={loading}
-        >
-          {loading ? dynamicButtonLabel : buttonLabel}
-        </Button>
-      </div>
+          return (
+            <List.Item
+              key={theme.name}
+              label={theme.name}
+              onClick={() => onSelect(theme)}
+              selected={theme == selectedTheme}
+              className={isLastFavorited ? 'mb-3' : ''}
+            >
+              <List.Toggle
+                onClick={(isOn) => {
+                  onToggleFavorite(theme, isOn);
+                }}
+                iconOff={Star}
+                iconOn={Star}
+                on={theme.favorite}
+              />
+            </List.Item>
+          );
+        })}
+      </List.Root>
     </div>
   );
 };

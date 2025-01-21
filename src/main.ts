@@ -1,5 +1,5 @@
 import { showUI, emit, on } from '@create-figma-plugin/utilities';
-import { loadThemesAsync, Theme } from './themes';
+import { loadThemesAsync, sortThemes, Theme } from './themes';
 import applyTheme from './themers/themer';
 import {
   TOGGLE_FAVORITE,
@@ -19,8 +19,16 @@ export default async function () {
   let themes = await loadThemesAsync();
 
   const onToggleFavorite = async (theme: Theme) => {
+    // Update cache
     onToggleFavoriteHandler(theme);
-    themes = await loadThemesAsync();
+
+    // Find the theme in the array and update and sort (sorting is dependent on theme favorites)
+    const index = themes.findIndex((t) => t.name === theme.name);
+    if (index !== -1) {
+      themes[index] = theme;
+    }
+    themes = sortThemes(themes);
+
     emit(THEMES, themes);
   };
 

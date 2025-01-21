@@ -112,9 +112,12 @@ const flattenNodes = (nodes: SceneNode[]): SceneNode[] => {
   let allNodes: SceneNode[] = [];
 
   nodes.forEach((node) => {
+    console.log('NODE TYPE', node.type);
+
     allNodes.push(node);
     if (
       (node.type == 'COMPONENT' ||
+        node.type == 'COMPONENT_SET' ||
         node.type === 'INSTANCE' ||
         node.type === 'SECTION' ||
         node.type === 'FRAME' ||
@@ -129,7 +132,13 @@ const flattenNodes = (nodes: SceneNode[]): SceneNode[] => {
 };
 
 const explodeNode = (
-  node: FrameNode | GroupNode | InstanceNode | SectionNode | ComponentNode
+  node:
+    | FrameNode
+    | GroupNode
+    | InstanceNode
+    | SectionNode
+    | ComponentNode
+    | ComponentSetNode
 ): SceneNode[] => {
   let nodes: SceneNode[] = [];
   if ('children' in node) {
@@ -141,7 +150,8 @@ const explodeNode = (
             child.type === 'FRAME' ||
             child.type === 'GROUP' ||
             child.type === 'COMPONENT' ||
-            child.type === 'SECTION') &&
+            child.type === 'SECTION' ||
+            child.type === 'COMPONENT_SET') &&
           'children' in child
         ) {
           nodes = nodes.concat(
@@ -152,6 +162,7 @@ const explodeNode = (
                 | InstanceNode
                 | SectionNode
                 | ComponentNode
+                | ComponentSetNode
             )
           );
         }

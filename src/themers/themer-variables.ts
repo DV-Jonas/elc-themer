@@ -1,5 +1,5 @@
 import { emit } from '@create-figma-plugin/utilities';
-import { THEME_PROGRESS } from 'src/events';
+import { THEME_APPLIED, THEME_PROGRESS } from 'src/events';
 import { Theme } from '../themes';
 import { defer, ErrorWithPayload, flattenNodes } from 'src/util';
 

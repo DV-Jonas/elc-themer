@@ -31,7 +31,7 @@ const Header = () => {
   return (
     <div
       className={
-        'flex flex-row gap-3 h-10 px-3 text-on-surface-variant dark:text-on-surface-variant-dark items-center justify-between shrink-0 fixed top-0 left-0 right-0'
+        'flex flex-row gap-3 h-10 px-3 text-on-surface-variant dark:text-on-surface-variant-dark items-center justify-between shrink-0 border-b border-divider dark:border-divider-dark'
       }
     >
       <div>Select your frames, choose the brand, and click Apply</div>
