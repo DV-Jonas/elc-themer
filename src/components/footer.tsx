@@ -11,11 +11,11 @@ import { Check } from 'lucide-preact';
 
 type Props = {
   disabled?: boolean;
-  onApplyTheme: (level: 'full' | 'partial') => void;
+  onApplyTheme: (depth: ThemeDepth) => void;
 };
 
 const Footer = ({ disabled, onApplyTheme }: Props) => {
-  const [selectedThemingLevel, setSelectedThemingLevel] =
+  const [selectedThemingDepth, setSelectedThemingDepth] =
     useState<ThemeDepth>('full');
   const [loading, setLoading] = useState(false);
   const [dynamicButtonLabel, setDynamicButtonLabel] = useState<string>('');
@@ -25,9 +25,9 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
     spacing: 'Apply spacing',
   };
 
-  const onApply = (level: 'full' | 'partial') => {
+  const onApply = () => {
     setLoading(true);
-    onApplyTheme(level);
+    onApplyTheme(selectedThemingDepth);
   };
 
   const onDropdownClick = (e: Event) => {
@@ -37,7 +37,7 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
   };
 
   const onDropdownSelect = (value: string) => {
-    setSelectedThemingLevel(value as ThemeDepth);
+    setSelectedThemingDepth(value as ThemeDepth);
     setShowDropdown(false);
   };
 
@@ -52,14 +52,14 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
         </div>
       )}
       <Button
-        onClick={() => onApply('full')}
+        onClick={onApply}
         fullWidth
         dropDown
         onDropdownClick={onDropdownClick}
         disabled={disabled}
         loading={loading}
       >
-        {loading ? dynamicButtonLabel : buttonLabels[selectedThemingLevel]}
+        {loading ? dynamicButtonLabel : buttonLabels[selectedThemingDepth]}
       </Button>
 
       {showDropdown && (
@@ -71,14 +71,14 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
           <Dropdown.root className='absolute bottom-12 left-3 right-3'>
             <Dropdown.item
               label='Full theme'
-              leadingIcon={selectedThemingLevel === 'full' ? Check : undefined}
+              leadingIcon={selectedThemingDepth === 'full' ? Check : undefined}
               value='full'
               onSelect={onDropdownSelect}
             />
             <Dropdown.item
               label='Spacing'
               leadingIcon={
-                selectedThemingLevel === 'spacing' ? Check : undefined
+                selectedThemingDepth === 'spacing' ? Check : undefined
               }
               value='spacing'
               onSelect={onDropdownSelect}

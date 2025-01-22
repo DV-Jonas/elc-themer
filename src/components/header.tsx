@@ -5,6 +5,7 @@ import { emit, on } from '@create-figma-plugin/utilities';
 import { APPEND_LOG, LOG_UPDATED, SELECT_NODE } from 'src/events';
 import Modal from './modal';
 import { ErrorWithPayload } from 'src/util';
+import { TriangleAlert } from 'lucide-preact';
 
 const Header = () => {
   const [open, setOpen] = useState<boolean>(false);
@@ -37,8 +38,8 @@ const Header = () => {
       <div>Select your frames, choose the brand, and click Apply</div>
 
       {log.length > 0 && (
-        <Button onClick={handleOpenButtonClick} variant='error' size='sm'>
-          Log
+        <Button onClick={handleOpenButtonClick} variant='error' size='md'>
+          <TriangleAlert className='w-4 h-4 mx-1' color='white' />
         </Button>
       )}
 

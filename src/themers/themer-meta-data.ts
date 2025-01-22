@@ -1,5 +1,5 @@
 import { ErrorWithPayload, flattenNodes, parseCSSGradient } from 'src/util';
-import { Theme } from '../themes';
+import { Theme, ThemeDepth } from '../themes';
 import config from 'config';
 
 type Token = {
@@ -10,7 +10,7 @@ type Token = {
 
 let log: ErrorWithPayload[] = [];
 
-const themer = async (nodes: SceneNode[], theme: Theme) => {
+const themer = async (nodes: SceneNode[], theme: Theme, depth: ThemeDepth) => {
   log = [];
 
   // Filter for visible nodes first

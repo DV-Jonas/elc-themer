@@ -1,5 +1,5 @@
 import { showUI, emit, on } from '@create-figma-plugin/utilities';
-import { loadThemesAsync, sortThemes, Theme } from './themes';
+import { loadThemesAsync, sortThemes, Theme, ThemeDepth } from './themes';
 import applyTheme from './themers/themer';
 import {
   TOGGLE_FAVORITE,
@@ -32,12 +32,12 @@ export default async function () {
     emit(THEMES, themes);
   };
 
-  const onApplyTheme = async (themeName: string) => {
+  const onApplyTheme = async (themeName: string, depth: ThemeDepth) => {
     emit(LOG_UPDATED, []);
     // Timeout is needed let the UI update before applying the theme (theme is a blocking call)
     setTimeout(async () => {
       const selectedTheme = themes.find((t) => t.name === themeName);
-      await applyTheme(selectedTheme!);
+      await applyTheme(selectedTheme!, depth);
       emit(THEME_APPLIED);
     }, 100);
   };

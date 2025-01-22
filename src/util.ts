@@ -112,8 +112,6 @@ const flattenNodes = (nodes: SceneNode[]): SceneNode[] => {
   let allNodes: SceneNode[] = [];
 
   nodes.forEach((node) => {
-    console.log('NODE TYPE', node.type);
-
     allNodes.push(node);
     if (
       (node.type == 'COMPONENT' ||

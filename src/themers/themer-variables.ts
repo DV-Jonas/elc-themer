@@ -1,6 +1,6 @@
 import { emit } from '@create-figma-plugin/utilities';
 import { THEME_APPLIED, THEME_PROGRESS } from 'src/events';
-import { Theme } from '../themes';
+import { Theme, ThemeDepth } from '../themes';
 import { defer, ErrorWithPayload, flattenNodes } from 'src/util';
 
 type VariableConfig = {
@@ -11,9 +11,12 @@ type VariableConfig = {
 };
 
 let log: ErrorWithPayload[] = [];
+let depth: ThemeDepth;
 
-const themer = async (nodes: SceneNode[], theme: Theme) => {
+const themer = async (nodes: SceneNode[], theme: Theme, _depth: ThemeDepth) => {
   log = [];
+  depth = _depth;
+
   for (const node of nodes) {
     await processNode(node, theme);
   }
@@ -57,6 +60,14 @@ const processLayersWithVariables = async (
               node,
               variableRef
             );
+
+            // Theming depth is set to spacing, so we only apply spacing variables
+            if (depth === 'spacing') {
+              if (!sourceVariableConfig.path.startsWith('spacing/')) {
+                continue;
+              }
+            }
+
             await applyVariable(
               node,
               theme,
