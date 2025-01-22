@@ -10,6 +10,7 @@ export default {
     colors: {
       "primary": colorTokens.primary[500],
       "on-primary": colorTokens.neutral[0],
+      "primary-variant": colorTokens.primary[800],
       "surface": {
         DEFAULT: colorTokens.neutral[0],
         dark: colorTokens.neutral[800]
@@ -53,7 +54,11 @@ export default {
       "on-error": {
         DEFAULT: colorTokens.neutral[1000],
         dark: colorTokens.neutral[1000]
-      }
+      },
+      "divider": {
+        current: colorTokens.divider.light,
+        dark: colorTokens.divider.dark,
+      },
     },
     fontFamily: {
       sans: [typographyTokens.family.body, 'sans-serif'],

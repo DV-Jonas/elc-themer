@@ -115,11 +115,11 @@ const flattenNodes = (nodes: SceneNode[]): SceneNode[] => {
     allNodes.push(node);
     if (
       (node.type == 'COMPONENT' ||
+        node.type == 'COMPONENT_SET' ||
         node.type === 'INSTANCE' ||
         node.type === 'SECTION' ||
         node.type === 'FRAME' ||
-        node.type === 'GROUP' ||
-        node.type === 'COMPONENT_SET') &&
+        node.type === 'GROUP') &&
       'children' in node
     ) {
       const childNodes = explodeNode(node);

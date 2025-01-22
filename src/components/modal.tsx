@@ -36,7 +36,7 @@ const Modal = ({ onClose, children, open }: ModalProps) => {
 
   return (
     <div
-      className={`w-screen h-screen absolute top-0 left-0 transition-opacity duration-300 ${
+      className={`w-screen h-screen top-0 left-0 transition-opacity duration-300 absolute z-50 ${
         isVisible && !isClosing ? 'opacity-100' : 'opacity-0'
       }`}
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}

@@ -12,6 +12,8 @@ type Theme = {
   }[];
 };
 
+type ThemeDepth = 'full' | 'spacing';
+
 const loadThemesAsync = async () => {
   const libraryCollections =
     await figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync();
@@ -64,6 +66,10 @@ const loadThemesAsync = async () => {
 
   const themes = Object.values(groupedCollections);
 
+  return sortThemes(themes);
+};
+
+const sortThemes = (themes: Theme[]) => {
   return themes.sort((a, b) => {
     if (b.favorite !== a.favorite) {
       return b.favorite ? 1 : -1;
@@ -78,4 +84,4 @@ const filterThemes = (themes: LibraryVariableCollection[]) => {
   );
 };
 
-export { type Theme, loadThemesAsync };
+export { type Theme, type ThemeDepth, loadThemesAsync, sortThemes };

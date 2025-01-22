@@ -5,6 +5,7 @@ import { emit, on } from '@create-figma-plugin/utilities';
 import { APPEND_LOG, LOG_UPDATED, SELECT_NODE } from 'src/events';
 import Modal from './modal';
 import { ErrorWithPayload } from 'src/util';
+import { TriangleAlert } from 'lucide-preact';
 
 const Header = () => {
   const [open, setOpen] = useState<boolean>(false);
@@ -31,14 +32,14 @@ const Header = () => {
   return (
     <div
       className={
-        'flex flex-row gap-3 h-10 px-3 text-on-surface-variant dark:text-on-surface-variant-dark items-center justify-between shrink-0 fixed top-0 left-0 right-0'
+        'flex flex-row gap-3 h-10 px-3 text-on-surface-variant dark:text-on-surface-variant-dark items-center justify-between shrink-0 border-b border-divider dark:border-divider-dark'
       }
     >
       <div>Select your frames, choose the brand, and click Apply</div>
 
       {log.length > 0 && (
-        <Button onClick={handleOpenButtonClick} variant='error' size='sm'>
-          Log
+        <Button onClick={handleOpenButtonClick} variant='error' size='md'>
+          <TriangleAlert className='w-4 h-4 mx-1' color='white' />
         </Button>
       )}
 
