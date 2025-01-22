@@ -6,6 +6,8 @@ import { THEME_APPLIED } from 'src/events';
 import { useState } from 'preact/hooks';
 import Overlay from './overlay';
 import Dropdown from './dropdown-menu';
+import { ThemeDepth } from 'src/themes';
+import { Check } from 'lucide-preact';
 
 type Props = {
   disabled?: boolean;
@@ -13,10 +15,15 @@ type Props = {
 };
 
 const Footer = ({ disabled, onApplyTheme }: Props) => {
-  const buttonLabel = 'Apply theme';
+  const [selectedThemingLevel, setSelectedThemingLevel] =
+    useState<ThemeDepth>('full');
   const [loading, setLoading] = useState(false);
-  const [dynamicButtonLabel, setDynamicButtonLabel] = useState(buttonLabel);
+  const [dynamicButtonLabel, setDynamicButtonLabel] = useState<string>('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const buttonLabels = {
+    full: 'Apply full theme',
+    spacing: 'Apply spacing',
+  };
 
   const onApply = (level: 'full' | 'partial') => {
     setLoading(true);
@@ -27,6 +34,11 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
     e.stopPropagation();
     e.preventDefault();
     setShowDropdown(true);
+  };
+
+  const onDropdownSelect = (value: string) => {
+    setSelectedThemingLevel(value as ThemeDepth);
+    setShowDropdown(false);
   };
 
   on(THEME_PROGRESS, (progress: string) => setDynamicButtonLabel(progress));
@@ -47,7 +59,7 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
         disabled={disabled}
         loading={loading}
       >
-        {loading ? dynamicButtonLabel : buttonLabel}
+        {loading ? dynamicButtonLabel : buttonLabels[selectedThemingLevel]}
       </Button>
 
       {showDropdown && (
@@ -56,12 +68,21 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
           open={showDropdown}
           onClose={() => setShowDropdown(false)}
         >
-          <Dropdown.root
-            className='absolute bottom-12 left-3 right-3'
-            onSelect={() => {}}
-          >
-            <Dropdown.item label='first' value='first' onClick={() => {}} />
-            <Dropdown.item label='senond' value='senond' onClick={() => {}} />
+          <Dropdown.root className='absolute bottom-12 left-3 right-3'>
+            <Dropdown.item
+              label='Full theme'
+              leadingIcon={selectedThemingLevel === 'full' ? Check : undefined}
+              value='full'
+              onSelect={onDropdownSelect}
+            />
+            <Dropdown.item
+              label='Spacing'
+              leadingIcon={
+                selectedThemingLevel === 'spacing' ? Check : undefined
+              }
+              value='spacing'
+              onSelect={onDropdownSelect}
+            />
           </Dropdown.root>
         </Overlay>
       )}

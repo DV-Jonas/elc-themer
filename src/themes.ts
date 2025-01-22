@@ -12,6 +12,8 @@ type Theme = {
   }[];
 };
 
+type ThemeDepth = 'full' | 'spacing';
+
 const loadThemesAsync = async () => {
   const libraryCollections =
     await figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync();
@@ -82,4 +84,4 @@ const filterThemes = (themes: LibraryVariableCollection[]) => {
   );
 };
 
-export { type Theme, loadThemesAsync, sortThemes };
+export { type Theme, type ThemeDepth, loadThemesAsync, sortThemes };

@@ -578,12 +578,24 @@ video {
   bottom: 0px;
 }
 
+.bottom-12 {
+  bottom: 3rem;
+}
+
 .left-0 {
   left: 0px;
 }
 
+.left-3 {
+  left: 0.75rem;
+}
+
 .right-0 {
   right: 0px;
+}
+
+.right-3 {
+  right: 0.75rem;
 }
 
 .top-0 {
@@ -592,18 +604,6 @@ video {
 
 .top-12 {
   top: 3rem;
-}
-
-.bottom-12 {
-  bottom: 3rem;
-}
-
-.left-3 {
-  left: 0.75rem;
-}
-
-.right-3 {
-  right: 0.75rem;
 }
 
 .z-0 {
@@ -653,6 +653,14 @@ video {
 
 .mt-12 {
   margin-top: 3rem;
+}
+
+.mr-3 {
+  margin-right: 0.75rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
 }
 
 .flex {
@@ -735,6 +743,14 @@ video {
   height: 100vh;
 }
 
+.h-4 {
+  height: 1rem;
+}
+
+.h-3 {
+  height: 0.75rem;
+}
+
 .min-h-10 {
   min-height: 2.5rem;
 }
@@ -761,6 +777,14 @@ video {
 
 .w-screen {
   width: 100vw;
+}
+
+.w-4 {
+  width: 1rem;
+}
+
+.w-3 {
+  width: 0.75rem;
 }
 
 .flex-shrink-0 {
@@ -879,16 +903,16 @@ video {
   border-radius: 0.25rem;
 }
 
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
 .rounded-md {
   border-radius: 0.375rem;
 }
 
 .rounded-sm {
   border-radius: 0.125rem;
-}
-
-.rounded-lg {
-  border-radius: 0.5rem;
 }
 
 .border {
@@ -967,6 +991,11 @@ video {
   background-color: rgb(130 130 130 / var(--tw-bg-opacity));
 }
 
+.bg-on-surface-variant-dark {
+  --tw-bg-opacity: 1;
+  background-color: rgb(145 145 146 / var(--tw-bg-opacity));
+}
+
 .bg-primary {
   --tw-bg-opacity: 1;
   background-color: rgb(12 140 233 / var(--tw-bg-opacity));
@@ -997,19 +1026,14 @@ video {
   background-color: rgb(228 228 228 / var(--tw-bg-opacity));
 }
 
-.bg-on-surface-variant-dark {
+.bg-surface-container-high-dark {
   --tw-bg-opacity: 1;
-  background-color: rgb(145 145 146 / var(--tw-bg-opacity));
+  background-color: rgb(68 68 68 / var(--tw-bg-opacity));
 }
 
 .bg-surface-dark {
   --tw-bg-opacity: 1;
   background-color: rgb(44 44 44 / var(--tw-bg-opacity));
-}
-
-.bg-surface-container-high-dark {
-  --tw-bg-opacity: 1;
-  background-color: rgb(68 68 68 / var(--tw-bg-opacity));
 }
 
 .fill-on-primary {
@@ -1229,16 +1253,16 @@ video {
   transition-duration: 150ms;
 }
 
+.duration-100 {
+  transition-duration: 100ms;
+}
+
 .duration-200 {
   transition-duration: 200ms;
 }
 
 .duration-300 {
   transition-duration: 300ms;
-}
-
-.duration-100 {
-  transition-duration: 100ms;
 }
 
 .ease-out {
@@ -1251,6 +1275,11 @@ video {
 
 .hover\:cursor-pointer:hover {
   cursor: pointer;
+}
+
+.hover\:bg-on-surface-container-high-variant:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(214 214 214 / var(--tw-bg-opacity));
 }
 
 .hover\:bg-on-surface-container-variant:hover {
@@ -1276,11 +1305,6 @@ video {
 .hover\:bg-surface-container-high:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(228 228 228 / var(--tw-bg-opacity));
-}
-
-.hover\:bg-on-surface-container-high-variant:hover {
-  --tw-bg-opacity: 1;
-  background-color: rgb(214 214 214 / var(--tw-bg-opacity));
 }
 
 .hover\:fill-on-primary:hover {
@@ -1339,9 +1363,9 @@ video {
   background-color: rgb(68 68 68 / var(--tw-bg-opacity));
 }
 
-.dark\:bg-surface-container-dark:is(.figma-dark *) {
+.dark\:bg-on-surface-dark:is(.figma-dark *) {
   --tw-bg-opacity: 1;
-  background-color: rgb(57 56 56 / var(--tw-bg-opacity));
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity));
 }
 
 .dark\:bg-on-surface-variant-dark:is(.figma-dark *) {
@@ -1349,19 +1373,19 @@ video {
   background-color: rgb(145 145 146 / var(--tw-bg-opacity));
 }
 
-.dark\:bg-on-surface-dark:is(.figma-dark *) {
+.dark\:bg-surface-container-dark:is(.figma-dark *) {
   --tw-bg-opacity: 1;
-  background-color: rgb(255 255 255 / var(--tw-bg-opacity));
-}
-
-.dark\:bg-surface-dark:is(.figma-dark *) {
-  --tw-bg-opacity: 1;
-  background-color: rgb(44 44 44 / var(--tw-bg-opacity));
+  background-color: rgb(57 56 56 / var(--tw-bg-opacity));
 }
 
 .dark\:bg-surface-container-high-dark:is(.figma-dark *) {
   --tw-bg-opacity: 1;
   background-color: rgb(68 68 68 / var(--tw-bg-opacity));
+}
+
+.dark\:bg-surface-dark:is(.figma-dark *) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(44 44 44 / var(--tw-bg-opacity));
 }
 
 .dark\:fill-on-surface-dark:is(.figma-dark *) {
@@ -1375,6 +1399,11 @@ video {
 .dark\:text-on-surface-variant-dark:is(.figma-dark *) {
   --tw-text-opacity: 1;
   color: rgb(145 145 146 / var(--tw-text-opacity));
+}
+
+.dark\:hover\:bg-on-surface-container-high-variant-dark:hover:is(.figma-dark *) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(130 130 130 / var(--tw-bg-opacity));
 }
 
 .dark\:hover\:bg-on-surface-container-variant:hover:is(.figma-dark *) {
@@ -1400,11 +1429,6 @@ video {
 .hover\:dark\:bg-surface-container-dark:is(.figma-dark *):hover {
   --tw-bg-opacity: 1;
   background-color: rgb(57 56 56 / var(--tw-bg-opacity));
-}
-
-.dark\:hover\:bg-on-surface-container-high-variant-dark:hover:is(.figma-dark *) {
-  --tw-bg-opacity: 1;
-  background-color: rgb(130 130 130 / var(--tw-bg-opacity));
 }
 
 .disabled\:dark\:bg-surface-container-dark:is(.figma-dark *):disabled {
