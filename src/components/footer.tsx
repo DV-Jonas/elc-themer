@@ -21,8 +21,9 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
   const [dynamicButtonLabel, setDynamicButtonLabel] = useState<string>('');
   const [showDropdown, setShowDropdown] = useState(false);
   const buttonLabels = {
-    full: 'Apply full theme',
-    spacing: 'Apply spacing',
+    full: 'Apply theme',
+    spacing: 'Apply spacing only',
+    fullPostProcess: 'Apply theme with post-processing',
   };
 
   const onApply = () => {
@@ -70,13 +71,21 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
         >
           <Dropdown.root className='absolute bottom-12 left-3 right-3'>
             <Dropdown.item
-              label='Full theme'
+              label='Theme'
               leadingIcon={selectedThemingDepth === 'full' ? Check : undefined}
               value='full'
               onSelect={onDropdownSelect}
             />
             <Dropdown.item
-              label='Spacing'
+              label='Theme with post-processing'
+              leadingIcon={
+                selectedThemingDepth === 'fullPostProcess' ? Check : undefined
+              }
+              value='fullPostProcess'
+              onSelect={onDropdownSelect}
+            />
+            <Dropdown.item
+              label='Spacing only'
               leadingIcon={
                 selectedThemingDepth === 'spacing' ? Check : undefined
               }

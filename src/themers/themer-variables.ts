@@ -5,6 +5,7 @@ import { defer, ErrorWithPayload, flattenNodes } from 'src/util';
 
 type VariableConfig = {
   collectionName: string;
+  collectionId: string;
   explicitModes: string[] | null;
   path: string;
   variable: Variable;
@@ -16,12 +17,50 @@ let depth: ThemeDepth;
 const themer = async (nodes: SceneNode[], theme: Theme, _depth: ThemeDepth) => {
   log = [];
   depth = _depth;
+  const processedComponents: (ComponentNode | ComponentSetNode)[] = [];
 
-  for (const node of nodes) {
-    await processNode(node, theme);
+  await Promise.all(
+    nodes.map(async (node) => {
+      await processNode(node, theme);
+
+      if (node.type === 'COMPONENT' || node.type === 'COMPONENT_SET')
+        processedComponents.push(node);
+    })
+  );
+
+  if (depth === 'fullPostProcess') {
+    await Promise.all(
+      processedComponents.map(async (component) => {
+        await postProcessComponent(component, theme);
+      })
+    );
   }
 
   return log;
+};
+
+const postProcessComponent = async (
+  node: ComponentNode | ComponentSetNode,
+  theme: Theme
+) => {
+  const processInstances = async (instances: InstanceNode[]) => {
+    for (const instance of instances) {
+      const flattenedInstance = flattenNodes([instance]);
+      for (const node of flattenedInstance) {
+        await processNode(node, theme);
+      }
+    }
+  };
+
+  if (node.type === 'COMPONENT') {
+    const instances = await node.getInstancesAsync();
+    await processInstances(instances);
+  } else if (node.type === 'COMPONENT_SET') {
+    for (const variant of node.children as ComponentNode[]) {
+      const instances = await variant.getInstancesAsync();
+      await processInstances(instances);
+    }
+  }
 };
 
 const processNode = async (node: SceneNode, theme: Theme) => {
@@ -129,6 +168,7 @@ const createSourceVariableConfig = async (
 
   return {
     collectionName: collection!.name,
+    collectionId: collection!.id,
     explicitModes,
     path: variable!.name,
     variable: variable!,
@@ -191,6 +231,10 @@ const applyVariable = async (
     throw new ErrorWithPayload(`Unknown variable: ${sourceConfig.path}`, {
       node: node,
     });
+  }
+
+  if (targetVariable.id === sourceConfig.variable.id) {
+    return;
   }
 
   if (propertyName === 'fills' || propertyName === 'strokes') {

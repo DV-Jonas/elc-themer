@@ -12,7 +12,7 @@ type Theme = {
   }[];
 };
 
-type ThemeDepth = 'full' | 'spacing';
+type ThemeDepth = 'full' | 'spacing' | 'fullPostProcess';
 
 const loadThemesAsync = async () => {
   const libraryCollections =
