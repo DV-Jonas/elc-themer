@@ -28,7 +28,7 @@ const themer = async (nodes: SceneNode[], theme: Theme, depth: ThemeDepth) => {
     if (node.type === 'TEXT') {
       await applyTextStyle(node, theme, textDecoration, textTransform);
     } else if (node.name.includes(config.iconPrefix)) {
-      applyIconSwap(node, theme, icon);
+      await applyIconSwap(node, theme, icon);
     } else {
       await applyGradientOverlay(node, theme, gradientOverlay);
     }

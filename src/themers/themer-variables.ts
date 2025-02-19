@@ -1,7 +1,12 @@
 import { emit } from '@create-figma-plugin/utilities';
 import { THEME_APPLIED, THEME_PROGRESS } from 'src/events';
 import { Theme, ThemeDepth } from '../themes';
-import { defer, ErrorWithPayload, flattenNodes } from 'src/util';
+import {
+  defer,
+  ErrorWithPayload,
+  flattenNodes,
+  instanceHasOverrides,
+} from 'src/util';
 
 type VariableConfig = {
   collectionName: string;
@@ -22,9 +27,7 @@ const themer = async (nodes: SceneNode[], theme: Theme, _depth: ThemeDepth) => {
   await Promise.all(
     nodes.map(async (node) => {
       await processNode(node, theme);
-
-      if (node.type === 'COMPONENT' || node.type === 'COMPONENT_SET')
-        processedComponents.push(node);
+      if (node.type === 'COMPONENT') processedComponents.push(node);
     })
   );
 
@@ -43,6 +46,8 @@ const postProcessComponent = async (
   node: ComponentNode | ComponentSetNode,
   theme: Theme
 ) => {
+  emit(THEME_PROGRESS, 'Post processing');
+
   const processInstances = async (instances: InstanceNode[]) => {
     for (const instance of instances) {
       const flattenedInstance = flattenNodes([instance]);
@@ -52,21 +57,31 @@ const postProcessComponent = async (
     }
   };
 
-  if (node.type === 'COMPONENT') {
-    const instances = await node.getInstancesAsync();
-    await processInstances(instances);
-  } else if (node.type === 'COMPONENT_SET') {
-    for (const variant of node.children as ComponentNode[]) {
-      const instances = await variant.getInstancesAsync();
-      await processInstances(instances);
+  const startTime = new Date();
+  console.log('start', startTime.toLocaleTimeString());
+  const instances = await (node as ComponentNode).getInstancesAsync();
+  const endTime = new Date();
+  console.log('end', endTime.toLocaleTimeString());
+  let instancesWithOverrides = new Set<InstanceNode>();
+
+  for (const instance of instances) {
+    emit(THEME_PROGRESS, instance.name);
+    if (instance.name.includes('*')) {
+      instancesWithOverrides.add(instance);
     }
   }
+
+  await processInstances([...instancesWithOverrides]);
 };
 
 const processNode = async (node: SceneNode, theme: Theme) => {
   emit(THEME_PROGRESS, node.name);
   await defer(async () => {
     try {
+      // if (!node) {
+      //   throw new ErrorWithPayload('Node does not exist', { node: node });
+      // }
+
       const layersWithVariables = node.boundVariables;
 
       if ('componentProperties' in node) {
@@ -77,7 +92,13 @@ const processNode = async (node: SceneNode, theme: Theme) => {
         await processLayersWithVariables(node, layersWithVariables, theme);
       }
     } catch (error) {
-      log.push(error as ErrorWithPayload);
+      console.log('node', node);
+      console.log('error', error);
+      if (error instanceof ErrorWithPayload) {
+        log.push(error);
+      } else {
+        log.push(new ErrorWithPayload('Unknown error', { node: node }));
+      }
     }
   });
 };
@@ -201,18 +222,6 @@ const applyPaints = (
     return paintItem;
   }) as readonly Paint[];
 };
-
-class VariableMissingError extends Error {
-  constructor(
-    public path: string,
-    public collectionName: string,
-    public explicitModes: string[] | null,
-    public nodeName: string
-  ) {
-    super(`Variable missing: ${path}`);
-    this.name = 'VariableMissingError';
-  }
-}
 
 const applyVariable = async (
   node: SceneNode,

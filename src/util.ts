@@ -190,11 +190,28 @@ class ErrorWithPayload extends Error {
   }
 }
 
+const instanceHasOverrides = (
+  instance: InstanceNode,
+  propertyName: NodeChangeProperty,
+  value: string
+) => {
+  if ('overrides' in instance && Array.isArray(instance.overrides)) {
+    console.log('overrides instance', instance.name, instance.overrides);
+    return (
+      instance.overrides.find((override) =>
+        override.overriddenFields.includes(propertyName)
+      ) !== undefined && instance.name.includes(value)
+    );
+  }
+  return false;
+};
+
 export {
   parseCSSGradient,
   detectGradientType,
   fetchTeamComponents,
   defer,
   flattenNodes,
+  instanceHasOverrides,
   ErrorWithPayload,
 };

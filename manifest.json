@@ -3,11 +3,17 @@
   "editorType": [
     "figma"
   ],
-  "id": "elc-themer",
+  "id": "1474035450593511628",
   "name": "ELC Themer",
   "main": "build/main.js",
   "ui": "build/ui.js",
-  "enableProposedApi": true,
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": [
+      "none"
+    ]
+  },
   "permissions": [
     "teamlibrary"
   ]
