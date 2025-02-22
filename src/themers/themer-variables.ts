@@ -176,7 +176,7 @@ const createSourceVariableConfig = async (
   variableRef: any
 ): Promise<VariableConfig> => {
   const variableId = variableRef.id as string;
-  const variable = figma.variables.getVariableById(variableId);
+  const variable = await figma.variables.getVariableByIdAsync(variableId);
   const collectionId = variable?.variableCollectionId as string;
   const collection = await figma.variables.getVariableCollectionByIdAsync(
     collectionId

@@ -8,8 +8,8 @@ const onToggleFavorite = (theme: Theme) => {
   }
 };
 
-const onSelectNode = (nodeId: string) => {
-  const node = figma.getNodeById(nodeId);
+const onSelectNode = async (nodeId: string) => {
+  const node = await figma.getNodeByIdAsync(nodeId);
   if (node && 'type' in node) {
     figma.currentPage.selection = [node as SceneNode];
     figma.viewport.scrollAndZoomIntoView([node as SceneNode]);

@@ -36,21 +36,21 @@ const Modal = ({ onClose, children, open }: ModalProps) => {
 
   return (
     <div
-      className={`w-screen h-screen top-0 left-0 transition-opacity duration-300 absolute z-50 ${
+      className={`w-screen absolute top-0 left-0 bottom-0 transition-opacity duration-300 z-50 overflow-y-scroll ${
         isVisible && !isClosing ? 'opacity-100' : 'opacity-0'
       }`}
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+      style={{ backgroundColor: 'rgba(0, 0, 0, 1)' }}
       onClick={handleOverlayClick}
       onTransitionEnd={handleTransitionEnd}
     >
       <div
         onClick={stopPropagation}
-        className={`bg-surface text-on-surface h-full transition-transform duration-300 ${
+        className={`bg-surface text-on-surface absolute top-0 left-0 bottom-0 transition-transform duration-300 overflow-y-scroll ${
           isVisible && !isClosing
             ? 'transform translate-x-0'
             : 'transform -translate-x-full'
         }`}
-        style={{ width: '340px' }}
+        style={{ width: '340px', height: '100%' }}
       >
         {children}
       </div>
