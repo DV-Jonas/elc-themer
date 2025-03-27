@@ -18,6 +18,8 @@ const themer = async (nodes: SceneNode[], theme: Theme, depth: ThemeDepth) => {
     node.getSharedPluginDataKeys(config.namespace).includes(config.key)
   );
 
+  console.log('nodesWithMetadata', nodesWithMetadata);
+
   for (const node of nodesWithMetadata) {
     const tokensAsString = node.getSharedPluginData(
       config.namespace,
@@ -25,9 +27,10 @@ const themer = async (nodes: SceneNode[], theme: Theme, depth: ThemeDepth) => {
     );
     const { textDecoration, textTransform, gradientOverlay, icon } =
       JSON.parse(tokensAsString);
+
     if (node.type === 'TEXT') {
       await applyTextStyle(node, theme, textDecoration, textTransform);
-    } else if (node.name.includes(config.iconPrefix)) {
+    } else if (icon) {
       await applyIconSwap(node, theme, icon);
     } else {
       await applyGradientOverlay(node, theme, gradientOverlay);
@@ -160,6 +163,7 @@ const applyGradientOverlay = async (
 };
 
 const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
+  console.log('applyIconSwap', node, theme, token);
   if (!token?.shouldTheme) {
     return;
   }
