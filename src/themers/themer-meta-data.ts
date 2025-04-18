@@ -25,13 +25,15 @@ const themer = async (nodes: SceneNode[], theme: Theme, depth: ThemeDepth) => {
       config.namespace,
       config.key
     );
-    const { textDecoration, textTransform, gradientOverlay, icon } =
+    const { textDecoration, textTransform, gradientOverlay, icon, component } =
       JSON.parse(tokensAsString);
 
     if (node.type === 'TEXT') {
       await applyTextStyle(node, theme, textDecoration, textTransform);
     } else if (icon) {
-      await applyIconSwap(node, theme, icon);
+      await applyIconSwap(node, theme, component);
+    } else if (component) {
+      await applyComponentSwap(node, theme, component);
     } else {
       await applyGradientOverlay(node, theme, gradientOverlay);
     }
@@ -230,6 +232,14 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
 
   // Then we swap the component
   (node as InstanceNode).swapComponent(component);
+};
+
+const applyComponentSwap = async (
+  node: SceneNode,
+  theme: Theme,
+  token: Token
+) => {
+  console.log('applyComponentSwap', node, theme, token);
 };
 
 export default themer;

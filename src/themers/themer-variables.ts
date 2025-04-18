@@ -27,61 +27,49 @@ const themer = async (nodes: SceneNode[], theme: Theme, _depth: ThemeDepth) => {
   await Promise.all(
     nodes.map(async (node) => {
       await processNode(node, theme);
-      if (node.type === 'COMPONENT') processedComponents.push(node);
+      // if (node.type === 'COMPONENT') processedComponents.push(node);
     })
   );
-
-  if (depth === 'fullPostProcess') {
-    await Promise.all(
-      processedComponents.map(async (component) => {
-        await postProcessComponent(component, theme);
-      })
-    );
-  }
 
   return log;
 };
 
-const postProcessComponent = async (
-  node: ComponentNode | ComponentSetNode,
-  theme: Theme
-) => {
-  emit(THEME_PROGRESS, 'Post processing');
+// const postProcessComponent = async (
+//   node: ComponentNode | ComponentSetNode,
+//   theme: Theme
+// ) => {
+//   emit(THEME_PROGRESS, 'Post processing');
 
-  const processInstances = async (instances: InstanceNode[]) => {
-    for (const instance of instances) {
-      const flattenedInstance = flattenNodes([instance]);
-      for (const node of flattenedInstance) {
-        await processNode(node, theme);
-      }
-    }
-  };
+//   const processInstances = async (instances: InstanceNode[]) => {
+//     for (const instance of instances) {
+//       const flattenedInstance = flattenNodes([instance]);
+//       for (const node of flattenedInstance) {
+//         await processNode(node, theme);
+//       }
+//     }
+//   };
 
-  const startTime = new Date();
-  console.log('start', startTime.toLocaleTimeString());
-  const instances = await (node as ComponentNode).getInstancesAsync();
-  const endTime = new Date();
-  console.log('end', endTime.toLocaleTimeString());
-  let instancesWithOverrides = new Set<InstanceNode>();
+//   const startTime = new Date();
+//   console.log('start', startTime.toLocaleTimeString());
+//   const instances = await (node as ComponentNode).getInstancesAsync();
+//   const endTime = new Date();
+//   console.log('end', endTime.toLocaleTimeString());
+//   let instancesWithOverrides = new Set<InstanceNode>();
 
-  for (const instance of instances) {
-    emit(THEME_PROGRESS, instance.name);
-    if (instance.name.includes('*')) {
-      instancesWithOverrides.add(instance);
-    }
-  }
+//   for (const instance of instances) {
+//     emit(THEME_PROGRESS, instance.name);
+//     if (instance.name.includes('*')) {
+//       instancesWithOverrides.add(instance);
+//     }
+//   }
 
-  await processInstances([...instancesWithOverrides]);
-};
+//   await processInstances([...instancesWithOverrides]);
+// };
 
 const processNode = async (node: SceneNode, theme: Theme) => {
   emit(THEME_PROGRESS, node.name);
   await defer(async () => {
     try {
-      // if (!node) {
-      //   throw new ErrorWithPayload('Node does not exist', { node: node });
-      // }
-
       const layersWithVariables = node.boundVariables;
 
       if ('componentProperties' in node) {
@@ -121,12 +109,12 @@ const processLayersWithVariables = async (
               variableRef
             );
 
-            // Theming depth is set to spacing, so we only apply spacing variables
-            if (depth === 'spacing') {
-              if (!sourceVariableConfig.path.startsWith('spacing/')) {
-                continue;
-              }
-            }
+            // // Theming depth is set to spacing, so we only apply spacing variables
+            // if (depth === 'spacing') {
+            //   if (!sourceVariableConfig.path.startsWith('spacing/')) {
+            //     continue;
+            //   }
+            // }
 
             await applyVariable(
               node,

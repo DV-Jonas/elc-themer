@@ -16,14 +16,13 @@ type Props = {
 
 const Footer = ({ disabled, onApplyTheme }: Props) => {
   const [selectedThemingDepth, setSelectedThemingDepth] =
-    useState<ThemeDepth>('full');
+    useState<ThemeDepth>('remote');
   const [loading, setLoading] = useState(false);
   const [dynamicButtonLabel, setDynamicButtonLabel] = useState<string>('');
   const [showDropdown, setShowDropdown] = useState(false);
   const buttonLabels = {
-    full: 'Apply theme',
-    spacing: 'Apply spacing only',
-    fullPostProcess: 'Apply theme with post-processing',
+    remote: 'Apply theme',
+    local: 'Apply theme (to local variables)',
   };
 
   const onApply = () => {
@@ -72,24 +71,16 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
           <Dropdown.root className='absolute bottom-12 left-3 right-3'>
             <Dropdown.item
               label='Theme'
-              leadingIcon={selectedThemingDepth === 'full' ? Check : undefined}
-              value='full'
+              leadingIcon={
+                selectedThemingDepth === 'remote' ? Check : undefined
+              }
+              value='remote'
               onSelect={onDropdownSelect}
             />
             <Dropdown.item
-              label='Theme with post-processing'
-              leadingIcon={
-                selectedThemingDepth === 'fullPostProcess' ? Check : undefined
-              }
-              value='fullPostProcess'
-              onSelect={onDropdownSelect}
-            />
-            <Dropdown.item
-              label='Spacing only'
-              leadingIcon={
-                selectedThemingDepth === 'spacing' ? Check : undefined
-              }
-              value='spacing'
+              label='Apply theme (to local variables)'
+              leadingIcon={selectedThemingDepth === 'local' ? Check : undefined}
+              value='local'
               onSelect={onDropdownSelect}
             />
           </Dropdown.root>

@@ -4,15 +4,30 @@ import metaDataThemer from './themer-meta-data';
 import variablesThemer from './themer-variables';
 import { emit } from '@create-figma-plugin/utilities';
 import { flattenNodes } from 'src/util';
+import { upsertLocalVariablesSet } from 'src/local-variables';
 
 const applyTheme = async (theme: Theme, depth: ThemeDepth) => {
-  let nodes = currentSelection();
-  const metaLog = await metaDataThemer(nodes, theme, depth);
+  let clonedTheme = theme; // Use a new variable to hold the theme being applied
 
-  // Reload and filter selection after metaDataThemer as it may swap components
+  if (depth === 'local') {
+    // Clone the theme to avoid modifying the original object
+    clonedTheme = { ...theme };
+
+    // Upsert the local variables
+    const collections = await upsertLocalVariablesSet(clonedTheme); // Pass the original theme here if upsert needs it
+
+    clonedTheme.collections = collections;
+  }
+
+  let nodes = currentSelection();
+  // Pass the potentially cloned theme to the themer
+  const metaLog = await metaDataThemer(nodes, clonedTheme, depth);
+
+  // Reload and filter selection after metaDataThemer as it may swap components ( the existing selection will not hold the recently swapped components)
   nodes = currentSelection();
 
-  const variablesLog = await variablesThemer(nodes, theme, depth);
+  // Pass the potentially cloned theme to the themer
+  const variablesLog = await variablesThemer(nodes, clonedTheme, depth);
   emit(LOG_UPDATED, [...metaLog, ...variablesLog]);
 };
 
