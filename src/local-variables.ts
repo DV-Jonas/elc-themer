@@ -37,7 +37,12 @@ const upsertLocalVariablesSet = async (theme: Theme) => {
       if (localCollection) {
         localCollection.modes.forEach((mode) => {
           if (mode.name === 'Mode 1') {
-            localCollection!.removeMode(mode.modeId);
+            try {
+              localCollection!.removeMode(mode.modeId);
+            } catch (error) {
+              console.error('Error removing mode:', error);
+              console.log('localCollection', localCollection);
+            }
           }
         });
       }

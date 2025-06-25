@@ -18,7 +18,7 @@ const loadThemesAsync = async () => {
   const libraryCollections =
     await figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync();
 
-  const filteredLibraryCollections = filterThemes(libraryCollections);
+  const filteredLibraryCollections = filterCollections(libraryCollections);
   const groupedCollections = await filteredLibraryCollections.reduce(
     async (accPromise, libraryCollection) => {
       const accumulator = await accPromise;
@@ -78,9 +78,9 @@ const sortThemes = (themes: Theme[]) => {
   });
 };
 
-const filterThemes = (themes: LibraryVariableCollection[]) => {
+const filterCollections = (themes: LibraryVariableCollection[]) => {
   return themes.filter((theme) =>
-    config.collectionNames.includes(theme.name as any)
+    config.themeCollections.includes(theme.name as any)
   );
 };
 

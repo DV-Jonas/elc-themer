@@ -2,7 +2,7 @@
 
 ## Development guide
 
-*This plugin is built with [Create Figma Plugin](https://yuanqing.github.io/create-figma-plugin/).*
+_This plugin is built with [Create Figma Plugin](https://yuanqing.github.io/create-figma-plugin/)._
 
 ### Pre-requisites
 
@@ -46,3 +46,67 @@ Official docs and code samples from Figma:
 
 - [Plugin API docs](https://figma.com/plugin-docs/)
 - [`figma/plugin-samples`](https://github.com/figma/plugin-samples#readme)
+
+# Component Swap (A.K.A Local tier support)
+
+Two companion plugins enable users to swap Enterprise components with local tier component versions.
+
+## Plugins
+
+**ELC-Admin**: Embed metadata into components so they can be recognized and swapped later. Run once during setup per component in both the Enterprise and Brand libraries.  
+**ELC-Themer**: Swaps components between the Enterprise library and any Brand (local-tier) variants.
+
+## Setup (one time action)
+
+### Enterprise component
+
+1. Open the enterprise component file.
+2. Launch the ELC-admin plugin.
+3. In the plugin, select 'Components' and click 'Setup'.
+
+Behind the scenes the ELC-admin plugin:
+
+- Adds a metadata 'swap tag' to every Component (or to each Variant inside a Component Set).
+- Writes the component key as a text label above the component so you can copy it later.
+
+### Local tier component
+
+1. Open the Brand library file.
+2. Copy paste the Enterprise component you want to customize into the brand file Components tab and apply your changes.
+3. Launch ELC-Admin → Components → Setup.
+4. Paste the original Enterprise component key into the custom component’s Description field.
+
+Behind the scenes the plugin:
+
+- Adds the same swap metadata tag.
+- Stores the Enterprise component key as a Figma variable in the local collection '3.swap' (creating that collection if it doesn't exist).
+
+Once both sides are tagged, the pair is ready for automatic swapping.
+
+## Swapping
+
+Figma's API **only** lets you import remote components by their exact key, so the plugin relies on the keys captured by ELC-Admin.
+
+### Swap Enterprise → Brand
+
+1. In the design file, launch ELC-Themer.
+2. Choose the desired Brand and click Apply theme.
+
+For every tagged component the plugin:
+
+- Reads the local tier component key from the local variable collection (path is defined in the metadata).
+- Imports that Brand component, matches the active variant, and swaps the instance.
+
+### Swap Brand → Enterprise
+
+1. Launch ELC-Themer.
+2. Select Enterprise and click Apply theme.
+
+For every tagged component the plugin:
+
+- Reads the Enterprise component key stored in the local tier component’s 'Description'.
+- Imports the Enterprise component, matches the active variant, and swaps the instance.
+
+### Why the flows differ
+
+Brand components live together in a single library file, while Enterprise components are stored across multiple files. The plugin therefore looks in different places depending on the swap direction.

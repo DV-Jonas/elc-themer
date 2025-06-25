@@ -6,6 +6,7 @@ type Token = {
   shouldTheme: boolean;
   path: string;
   collection: string;
+  value?: string;
 };
 
 let log: ErrorWithPayload[] = [];
@@ -18,8 +19,6 @@ const themer = async (nodes: SceneNode[], theme: Theme, depth: ThemeDepth) => {
     node.getSharedPluginDataKeys(config.namespace).includes(config.key)
   );
 
-  console.log('nodesWithMetadata', nodesWithMetadata);
-
   for (const node of nodesWithMetadata) {
     const tokensAsString = node.getSharedPluginData(
       config.namespace,
@@ -31,9 +30,9 @@ const themer = async (nodes: SceneNode[], theme: Theme, depth: ThemeDepth) => {
     if (node.type === 'TEXT') {
       await applyTextStyle(node, theme, textDecoration, textTransform);
     } else if (icon) {
-      await applyIconSwap(node, theme, component);
+      await applyIconSwap(node, theme, icon);
     } else if (component) {
-      await applyComponentSwap(node, theme, component);
+      await applyComponentSwap(node as InstanceNode, theme, component);
     } else {
       await applyGradientOverlay(node, theme, gradientOverlay);
     }
@@ -165,11 +164,8 @@ const applyGradientOverlay = async (
 };
 
 const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
-  console.log('applyIconSwap', node, theme, token);
-  if (!token?.shouldTheme) {
-    return;
-  }
-  // Get variable reference from theme
+  // To apply the swap, we need to get the custom component key
+  // from the variable stored in the brand library local variables collection
   const collection = theme.collections.find((c) => c.name === token.collection);
   const collectionValues = collection!.variables!;
   const variable = collectionValues.find(
@@ -193,6 +189,7 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
   // First we get the component key from the variable
   const componentKey = variable.resolveForConsumer(node).value;
   // Then we fetch the component set from the team library
+
   const componentSet = await figma.importComponentSetByKeyAsync(
     componentKey as string
   );
@@ -235,11 +232,91 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
 };
 
 const applyComponentSwap = async (
-  node: SceneNode,
+  node: InstanceNode,
   theme: Theme,
   token: Token
 ) => {
-  console.log('applyComponentSwap', node, theme, token);
+  // To apply the swap, we need to get the custom component key
+  // from the variable stored in the brand library local variables collection
+  let variable: Variable | undefined;
+  try {
+    const collection = theme.collections.find(
+      (c) => c.name === token.collection
+    );
+    const collectionValues = collection?.variables || [];
+    variable = collectionValues.find(
+      (v) => v.name === config.componentPath + node.name
+    );
+  } catch (error) {
+    return;
+  }
+
+  let componentKey: VariableValue;
+  if (variable) {
+    componentKey = variable.resolveForConsumer(node).value;
+  } else {
+    // If there is no variable stored, it means we're trying to swap a component back to the original white label component.
+    // The original component key is saved in the description of the custom component.
+    const mainComponent = await node.getMainComponentAsync();
+    const description =
+      mainComponent?.parent?.type === 'COMPONENT_SET'
+        ? mainComponent.parent.description
+        : mainComponent?.description;
+
+    componentKey = description ? JSON.parse(description).sourceKey : undefined;
+
+    if (!componentKey) {
+      console.log(
+        `Variable not found for path: ${config.componentPath + node.name}`,
+        { node: node }
+      );
+      return;
+    }
+  }
+
+  // Then we import the component or componentSet
+  let componentSet: ComponentSetNode;
+  try {
+    componentSet = await figma.importComponentSetByKeyAsync(
+      componentKey as string
+    );
+  } catch (error) {
+    log.push(
+      new ErrorWithPayload(
+        `Incorrect component key: ${config.componentPath + node.name}`,
+        { node: node }
+      )
+    );
+    return;
+  }
+
+  // Now we make sure we variants match between the original component and the imported component
+  const variantProps = (node as InstanceNode).variantProperties;
+  const component = (componentSet.children.find((child) => {
+    if ('variantProperties' in child) {
+      return (
+        JSON.stringify(child.variantProperties) === JSON.stringify(variantProps)
+      );
+    }
+    return false;
+  }) || componentSet.defaultVariant) as ComponentNode;
+
+  if (!component) {
+    log.push(
+      new ErrorWithPayload(
+        `No matching variant found and no default variant available`,
+        { node: node }
+      )
+    );
+    return;
+  }
+
+  // Lastly we swap the component
+  try {
+    (node as InstanceNode).swapComponent(component);
+  } catch (error) {
+    console.error('Error swapping component:', error);
+  }
 };
 
 export default themer;

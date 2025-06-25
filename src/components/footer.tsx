@@ -21,8 +21,8 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
   const [dynamicButtonLabel, setDynamicButtonLabel] = useState<string>('');
   const [showDropdown, setShowDropdown] = useState(false);
   const buttonLabels = {
-    remote: 'Apply theme',
-    local: 'Apply theme (to local variables)',
+    remote: 'Apply theme (remote)',
+    local: 'Apply theme (local)',
   };
 
   const onApply = () => {
@@ -70,7 +70,7 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
         >
           <Dropdown.root className='absolute bottom-12 left-3 right-3'>
             <Dropdown.item
-              label='Theme'
+              label='Apply remote theme'
               leadingIcon={
                 selectedThemingDepth === 'remote' ? Check : undefined
               }
@@ -78,7 +78,7 @@ const Footer = ({ disabled, onApplyTheme }: Props) => {
               onSelect={onDropdownSelect}
             />
             <Dropdown.item
-              label='Apply theme (to local variables)'
+              label='Apply local theme'
               leadingIcon={selectedThemingDepth === 'local' ? Check : undefined}
               value='local'
               onSelect={onDropdownSelect}

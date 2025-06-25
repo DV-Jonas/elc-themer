@@ -14,16 +14,17 @@ const applyTheme = async (theme: Theme, depth: ThemeDepth) => {
     clonedTheme = { ...theme };
 
     // Upsert the local variables
-    const collections = await upsertLocalVariablesSet(clonedTheme); // Pass the original theme here if upsert needs it
+    const collections = await upsertLocalVariablesSet(clonedTheme);
 
     clonedTheme.collections = collections;
   }
 
   let nodes = currentSelection();
+
   // Pass the potentially cloned theme to the themer
   const metaLog = await metaDataThemer(nodes, clonedTheme, depth);
 
-  // Reload and filter selection after metaDataThemer as it may swap components ( the existing selection will not hold the recently swapped components)
+  // Reload and filter selection after metaDataThemer as it may swap components (the existing selection will not hold the recently swapped components)
   nodes = currentSelection();
 
   // Pass the potentially cloned theme to the themer

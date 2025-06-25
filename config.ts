@@ -1,9 +1,10 @@
 const config = {
-  namespace: 'elc_tokenizer',
+  namespace: 'elc_admin',
+  whiteLabelThemeName: 'Enterprise',
   key: 'tokens',
-  iconPrefix: 'Icon-',
   iconPath: 'icons/',
-  collectionNames: ['1.theme', '2.responsive', '3.components'],
+  componentPath: 'components/',
+  themeCollections: ['1.theme', '2.responsive', '3.swap'],
 } as const;
 
 export default config;
