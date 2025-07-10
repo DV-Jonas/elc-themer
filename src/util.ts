@@ -215,3 +215,41 @@ export {
   instanceHasOverrides,
   ErrorWithPayload,
 };
+
+import { Theme, refreshThemeByName } from './themes';
+
+export const withThemeRefresh = <T extends any[]>(
+  themerFn: (
+    nodes: SceneNode[],
+    theme: Theme,
+    ...args: T
+  ) => Promise<ErrorWithPayload[]>
+) => {
+  return async (
+    nodes: SceneNode[],
+    theme: Theme,
+    ...args: T
+  ): Promise<ErrorWithPayload[]> => {
+    try {
+      return await themerFn(nodes, theme, ...args);
+    } catch (error) {
+      // If we get a stale variable error, try refreshing the theme once
+      if (isStaleVariableError(error)) {
+        console.log('Detected stale variables, refreshing theme...');
+        const refreshedTheme = await refreshThemeByName(theme.name);
+        if (refreshedTheme) {
+          return await themerFn(nodes, refreshedTheme, ...args);
+        }
+      }
+      throw error;
+    }
+  };
+};
+
+const isStaleVariableError = (error: any): boolean => {
+  return (
+    error instanceof ErrorWithPayload &&
+    (error.message.includes('Variable may be stale') ||
+      error.message.includes('no longer exists'))
+  );
+};

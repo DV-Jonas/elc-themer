@@ -1,7 +1,7 @@
 import { emit } from '@create-figma-plugin/utilities';
 import { THEME_PROGRESS } from 'src/events';
 import { Theme, ThemeDepth } from '../themes';
-import { defer, ErrorWithPayload } from 'src/util';
+import { defer, ErrorWithPayload, withThemeRefresh } from 'src/util';
 
 type VariableConfig = {
   collectionName: string;
@@ -102,7 +102,7 @@ const processComponentProperties = async (node: InstanceNode, theme: Theme) => {
             (c) => c.name === config.collectionName
           );
           const variable = collection!.variables?.find(
-            (v) => v.name === config.path
+            (v) => v && v.name === config.path
           );
 
           const variableAlias = figma.variables.createVariableAlias(variable!);
@@ -124,22 +124,41 @@ const createSourceVariableConfig = async (
 ): Promise<VariableConfig> => {
   const variableId = variableRef.id as string;
   const variable = await figma.variables.getVariableByIdAsync(variableId);
-  const collectionId = variable?.variableCollectionId as string;
+
+  if (!variable) {
+    throw new ErrorWithPayload(
+      `Variable with id ${variableId} no longer exists`,
+      {
+        node: node,
+      }
+    );
+  }
+
+  const collectionId = variable.variableCollectionId as string;
   const collection = await figma.variables.getVariableCollectionByIdAsync(
     collectionId
   );
 
+  if (!collection) {
+    throw new ErrorWithPayload(
+      `Collection with id ${collectionId} no longer exists`,
+      {
+        node: node,
+      }
+    );
+  }
+
   const explicitModes = await getModeNames(
     node.explicitVariableModes!,
-    variable!
+    variable
   );
 
   return {
-    collectionName: collection!.name,
-    collectionId: collection!.id,
+    collectionName: collection.name,
+    collectionId: collection.id,
     explicitModes,
-    path: variable!.name,
-    variable: variable!,
+    path: variable.name,
+    variable: variable,
   };
 };
 
@@ -180,7 +199,7 @@ const applyVariable = async (
     (c) => c.name === sourceConfig.collectionName
   );
   const targetVariable = targetCollection?.variables?.find(
-    (v) => v.name === sourceConfig.path
+    (v) => v && v.name === sourceConfig.path
   );
 
   if (!targetVariable) {
@@ -259,4 +278,4 @@ const getModeNames = async (
   return Array.from(modeNamesSet); // Return an array of mode names
 };
 
-export default themer;
+export default withThemeRefresh(themer);

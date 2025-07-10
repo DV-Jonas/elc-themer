@@ -1,4 +1,9 @@
-import { ErrorWithPayload, flattenNodes, parseCSSGradient } from 'src/util';
+import {
+  ErrorWithPayload,
+  flattenNodes,
+  parseCSSGradient,
+  withThemeRefresh,
+} from 'src/util';
 import { Theme, ThemeDepth } from '../themes';
 import config from 'config';
 
@@ -66,7 +71,7 @@ const applyTextStyleProperty = async (
       (c) => c.name === token.collection
     );
     const collectionValues = collection!.variables!;
-    const variable = collectionValues.find((v) => v.name === token.path);
+    const variable = collectionValues.find((v) => v && v.name === token.path);
     if (!variable) {
       log.push(
         new ErrorWithPayload(`Variable not found for path: ${token.path}`, {
@@ -75,7 +80,17 @@ const applyTextStyleProperty = async (
       );
       return;
     }
-    const variableValue = variable!.resolveForConsumer(node).value;
+    let variableValue: VariableValue;
+    try {
+      variableValue = variable!.resolveForConsumer(node).value;
+    } catch (error) {
+      throw new ErrorWithPayload(
+        `Failed to resolve variable for path: ${token.path}. Variable may be stale`,
+        {
+          node: node,
+        }
+      );
+    }
 
     const fontName = (node as TextNode).fontName as FontName;
     await figma.loadFontAsync(fontName);
@@ -101,7 +116,7 @@ const applyGradientOverlay = async (
 
   const collection = theme.collections.find((c) => c.name === token.collection);
   const collectionValues = collection!.variables!;
-  const variable = collectionValues.find((v) => v.name === token.path);
+  const variable = collectionValues.find((v) => v && v.name === token.path);
   if (!variable) {
     log.push(
       new ErrorWithPayload(`Variable not found for path: ${token.path}`, {
@@ -111,7 +126,17 @@ const applyGradientOverlay = async (
     return;
   }
 
-  const variableValue = variable!.resolveForConsumer(node).value as string;
+  let variableValue: string;
+  try {
+    variableValue = variable!.resolveForConsumer(node).value as string;
+  } catch (error) {
+    throw new ErrorWithPayload(
+      `Failed to resolve variable for path: ${token.path}. Variable may be stale`,
+      {
+        node: node,
+      }
+    );
+  }
 
   if (variableValue === 'NONE') {
     const existingFills = (node as GeometryMixin).fills;
@@ -169,7 +194,7 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
   const collection = theme.collections.find((c) => c.name === token.collection);
   const collectionValues = collection!.variables!;
   const variable = collectionValues.find(
-    (v) => v.name === config.iconPath + node.name
+    (v) => v && v.name === config.iconPath + node.name
   );
 
   if (!variable) {
@@ -187,7 +212,19 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
 
   //// Fetch component from team library
   // First we get the component key from the variable
-  const componentKey = variable.resolveForConsumer(node).value;
+  let componentKey: VariableValue;
+  try {
+    componentKey = variable.resolveForConsumer(node).value;
+  } catch (error) {
+    throw new ErrorWithPayload(
+      `Failed to resolve variable for path: ${
+        config.iconPath + node.name
+      }. Variable may be stale`,
+      {
+        node: node,
+      }
+    );
+  }
   // Then we fetch the component set from the team library
 
   const componentSet = await figma.importComponentSetByKeyAsync(
@@ -245,7 +282,7 @@ const applyComponentSwap = async (
     );
     const collectionValues = collection?.variables || [];
     variable = collectionValues.find(
-      (v) => v.name === config.componentPath + node.name
+      (v) => v && v.name === config.componentPath + node.name
     );
   } catch (error) {
     return;
@@ -253,7 +290,18 @@ const applyComponentSwap = async (
 
   let componentKey: VariableValue;
   if (variable) {
-    componentKey = variable.resolveForConsumer(node).value;
+    try {
+      componentKey = variable.resolveForConsumer(node).value;
+    } catch (error) {
+      throw new ErrorWithPayload(
+        `Failed to resolve variable for path: ${
+          config.componentPath + node.name
+        }. Variable may be stale`,
+        {
+          node: node,
+        }
+      );
+    }
   } else {
     // If there is no variable stored, it means we're trying to swap a component back to the original white label component.
     // The original component key is saved in the description of the custom component.
@@ -319,4 +367,4 @@ const applyComponentSwap = async (
   }
 };
 
-export default themer;
+export default withThemeRefresh(themer);

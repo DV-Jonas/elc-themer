@@ -84,4 +84,11 @@ const filterCollections = (themes: LibraryVariableCollection[]) => {
   );
 };
 
+export const refreshThemeByName = async (
+  themeName: string
+): Promise<Theme | null> => {
+  const allThemes = await loadThemesAsync();
+  return allThemes.find((t) => t.name === themeName) || null;
+};
+
 export { type Theme, type ThemeDepth, loadThemesAsync, sortThemes };
