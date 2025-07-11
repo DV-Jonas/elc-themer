@@ -12,7 +12,7 @@ import {
   GET_LOCAL_VARIABLES,
   SEARCH_NODES_WITH_VARIABLE,
   APPLY_ACCENT_STYLING,
-  CLEAR_ACCENT_STYLING,
+  CLEAR_VISUALIZATIONS,
 } from './events';
 import tokens from '../tokens.json';
 import { onToggleFavoriteHandler } from './handlers/actions';
@@ -22,7 +22,7 @@ import {
   getLocalVariablesHandler,
   searchNodesWithVariableHandler,
   applyAccentStylingHandler,
-  clearAccentStylingHandler,
+  clearAllVisualizerStylingHandler,
 } from './handlers/local-variables';
 
 export default async function () {
@@ -64,7 +64,7 @@ export default async function () {
   on(GET_LOCAL_VARIABLES, getLocalVariablesHandler);
   on(SEARCH_NODES_WITH_VARIABLE, searchNodesWithVariableHandler);
   on(APPLY_ACCENT_STYLING, applyAccentStylingHandler);
-  on(CLEAR_ACCENT_STYLING, clearAccentStylingHandler);
+  on(CLEAR_VISUALIZATIONS, clearAllVisualizerStylingHandler);
 
   emit(THEMES, themes);
 }
