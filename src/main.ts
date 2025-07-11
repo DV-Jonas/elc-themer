@@ -8,15 +8,25 @@ import {
   THEME_APPLIED,
   LOG_UPDATED,
   SELECT_NODE,
+  GET_FILE_NAME,
+  GET_LOCAL_VARIABLES,
+  SEARCH_NODES_WITH_VARIABLE,
+  APPLY_ACCENT_STYLING,
+  CLEAR_ACCENT_STYLING,
 } from './events';
 import tokens from '../tokens.json';
+import { onToggleFavoriteHandler } from './handlers/actions';
+import { onSelectNodeHandler } from './handlers/selections';
+import { getFileNameHandler } from './handlers/file';
 import {
-  onSelectNode,
-  onToggleFavorite as onToggleFavoriteHandler,
-} from './handlers';
+  getLocalVariablesHandler,
+  searchNodesWithVariableHandler,
+  applyAccentStylingHandler,
+  clearAccentStylingHandler,
+} from './handlers/local-variables';
 
 export default async function () {
-  let themes = await loadThemesAsync();
+  // let themes = await loadThemesAsync();
 
   const onToggleFavorite = async (theme: Theme) => {
     // Update cache
@@ -49,7 +59,12 @@ export default async function () {
 
   on(TOGGLE_FAVORITE, onToggleFavorite);
   on(APPLY_THEME, onApplyTheme);
-  on(SELECT_NODE, onSelectNode);
+  on(SELECT_NODE, onSelectNodeHandler);
+  on(GET_FILE_NAME, getFileNameHandler);
+  on(GET_LOCAL_VARIABLES, getLocalVariablesHandler);
+  on(SEARCH_NODES_WITH_VARIABLE, searchNodesWithVariableHandler);
+  on(APPLY_ACCENT_STYLING, applyAccentStylingHandler);
+  on(CLEAR_ACCENT_STYLING, clearAccentStylingHandler);
 
   emit(THEMES, themes);
 }

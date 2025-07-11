@@ -1,33 +1,27 @@
 import '!./styles/output.css';
 import { render } from '@create-figma-plugin/ui';
 import { h } from 'preact';
-import { useState } from 'preact/hooks';
-import { Theme, ThemeDepth } from './themes';
-import Header from './components/header';
-import Themes from './components/themes';
+import { useEffect, useState } from 'preact/hooks';
 import { emit, on } from '@create-figma-plugin/utilities';
-import Footer from './components/footer';
-import { APPLY_THEME } from './events';
+import { FILE_NAME, GET_FILE_NAME } from './events';
+import config from '../config';
+import ThemeVisualizer from './ui/theme-visualizer';
+import ThemeSelector from './ui/theme-selector';
 
 function Plugin() {
-  const [themes, setThemes] = useState<Theme[]>([]);
-  const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
+  const [isSandBoxfile, setIsSandBoxfile] = useState<boolean>(false);
 
-  const onSelectTheme = (theme: Theme) => {
-    setSelectedTheme((prevTheme) => (prevTheme === theme ? null : theme));
-  };
+  useEffect(() => {
+    return on(FILE_NAME, (name) => {
+      setIsSandBoxfile(name.toLowerCase().includes(config.sandboxFileName));
+    });
+  }, []);
 
-  const onApplyTheme = (depth: ThemeDepth) => {
-    emit(APPLY_THEME, selectedTheme!.name, depth);
-  };
-
-  on('THEMES', setThemes);
+  emit(GET_FILE_NAME);
 
   return (
     <div class='flex flex-col h-full'>
-      <Header />
-      <Themes onSelectTheme={onSelectTheme} themes={themes} />
-      <Footer onApplyTheme={onApplyTheme} disabled={!selectedTheme} />
+      {isSandBoxfile ? <ThemeVisualizer /> : <ThemeSelector />}
     </div>
   );
 }

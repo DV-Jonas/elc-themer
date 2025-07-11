@@ -27,10 +27,10 @@ const Button = ({
     variant === 'secondary'
       ? 'bg-surface-container text-on-surface border-2 border-on-surface'
       : variant === 'error'
-      ? 'bg-error text-on-error'
+      ? 'bg-error text-on-error text-on-primary'
       : 'bg-primary text-on-primary';
 
-  const sizeClasses = size === 'sm' ? 'text-sm h-6 rounded-sm' : 'py-3 text-md';
+  const sizeClasses = size === 'sm' ? 'text-sm h-7 rounded-sm' : 'py-3 text-md';
 
   return (
     <Fragment>
