@@ -48,6 +48,7 @@ const ThemeVisualizer = () => {
   };
 
   const groupedNodes = groupNodesByComponent(state.nodesWithVariable);
+  const componentCount = Object.keys(groupedNodes).length;
 
   const handleInput = (event: Event & { currentTarget: HTMLInputElement }) => {
     actions.onInput(event.currentTarget.value);
@@ -90,8 +91,8 @@ const ThemeVisualizer = () => {
       {state.status === 'complete' && state.nodesWithVariable.length > 0 && (
         <div class='space-y-2'>
           <h3 class='text-sm font-medium'>
-            Found {state.nodesWithVariable.length} node
-            {state.nodesWithVariable.length === 1 ? '' : 's'} using this
+            Found {Object.keys(groupedNodes).length} component
+            {Object.keys(groupedNodes).length === 1 ? '' : 's'} using this
             variable:
           </h3>
           <div class='space-y-3 max-h-48 overflow-y-auto'>

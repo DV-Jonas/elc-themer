@@ -388,97 +388,150 @@ const clearAllVisualizerStylingHandler = async () => {
     const clearVisualizerFromNode = (node: BaseNode) => {
       let nodeModified = false;
 
-      // Check if this node has bound variables
-      if ('boundVariables' in node && node.boundVariables) {
-        const boundVariables = node.boundVariables;
+      try {
+        // Check if this node has bound variables
+        if ('boundVariables' in node && node.boundVariables) {
+          const boundVariables = node.boundVariables;
 
-        // Check all properties that might have bound variables
-        Object.entries(boundVariables).forEach(
-          ([propertyName, variableRefs]) => {
-            if (variableRefs) {
-              // Handle both single variable refs and arrays of variable refs
-              const refs = Array.isArray(variableRefs)
-                ? variableRefs
-                : [variableRefs];
+          // Check all properties that might have bound variables
+          Object.entries(boundVariables).forEach(
+            ([propertyName, variableRefs]) => {
+              if (variableRefs) {
+                try {
+                  // Handle both single variable refs and arrays of variable refs
+                  const refs = Array.isArray(variableRefs)
+                    ? variableRefs
+                    : [variableRefs];
 
-              // Check if any ref uses the visualizer variable
-              const hasVisualizerVariable = refs.some(
-                (ref) =>
-                  ref &&
-                  ref.type === 'VARIABLE_ALIAS' &&
-                  ref.id === visualizerVariableId
-              );
-
-              if (hasVisualizerVariable) {
-                // For arrays of variables, remove only the visualizer variable
-                if (Array.isArray(variableRefs)) {
-                  const newRefs = refs.filter(
+                  // Check if any ref uses the visualizer variable
+                  const hasVisualizerVariable = refs.some(
                     (ref) =>
-                      !ref ||
-                      ref.type !== 'VARIABLE_ALIAS' ||
-                      ref.id !== visualizerVariableId
+                      ref &&
+                      ref.type === 'VARIABLE_ALIAS' &&
+                      ref.id === visualizerVariableId
                   );
 
-                  // Update the property
-                  if (propertyName === 'strokes' && 'strokes' in node) {
-                    // For strokes, we need to remove the corresponding paint objects
-                    const currentStrokes = (node as any).strokes;
-                    const newStrokes = currentStrokes.filter(
-                      (stroke: Paint, index: number) => {
-                        const ref = refs[index];
-                        return (
-                          !ref ||
-                          ref.type !== 'VARIABLE_ALIAS' ||
-                          ref.id !== visualizerVariableId
-                        );
+                  if (hasVisualizerVariable) {
+                    // Only modify properties on nodes that support them and are editable
+                    const isEditableNode =
+                      (node.type === 'FRAME' || node.type === 'INSTANCE') &&
+                      'strokes' in node;
+
+                    if (!isEditableNode) {
+                      return; // Skip nodes that don't support stroke modification
+                    }
+
+                    // For arrays of variables, remove only the visualizer variable
+                    if (Array.isArray(variableRefs)) {
+                      // Update the property by removing visualizer-bound elements
+                      if (propertyName === 'strokes') {
+                        const currentStrokes = (
+                          node as FrameNode | InstanceNode
+                        ).strokes;
+                        if (Array.isArray(currentStrokes)) {
+                          // Remove ALL strokes that are bound to the visualizer variable
+                          const newStrokes = currentStrokes.filter((stroke) => {
+                            // Check if this stroke is bound to the visualizer variable
+                            if (
+                              stroke.type === 'SOLID' &&
+                              stroke.boundVariables?.color
+                            ) {
+                              const colorVar = stroke.boundVariables.color;
+                              const isVisualizerStroke =
+                                colorVar.type === 'VARIABLE_ALIAS' &&
+                                colorVar.id === visualizerVariableId;
+                              return !isVisualizerStroke;
+                            }
+                            return true;
+                          });
+
+                          (node as FrameNode | InstanceNode).strokes =
+                            newStrokes;
+                          nodeModified = true;
+                        }
+                      } else if (propertyName === 'fills') {
+                        const currentFills = (node as any).fills;
+                        if (Array.isArray(currentFills)) {
+                          const newFills = currentFills.filter(
+                            (fill: Paint, index: number) => {
+                              const ref = refs[index];
+                              return (
+                                !ref ||
+                                ref.type !== 'VARIABLE_ALIAS' ||
+                                ref.id !== visualizerVariableId
+                              );
+                            }
+                          );
+                          (node as any).fills = newFills;
+                          nodeModified = true;
+                        }
                       }
-                    );
-                    (node as any).strokes = newStrokes;
+                    } else {
+                      // Single variable ref - remove the single element
+                      if (propertyName === 'strokes') {
+                        const currentStrokes = (
+                          node as FrameNode | InstanceNode
+                        ).strokes;
+                        if (
+                          Array.isArray(currentStrokes) &&
+                          currentStrokes.length === 1
+                        ) {
+                          (node as FrameNode | InstanceNode).strokes = [];
+                          nodeModified = true;
+                        }
+                      } else if (propertyName === 'fills') {
+                        const currentFills = (node as any).fills;
+                        if (
+                          Array.isArray(currentFills) &&
+                          currentFills.length === 1
+                        ) {
+                          (node as any).fills = [];
+                          nodeModified = true;
+                        }
+                      }
+                    }
                   }
-                } else {
-                  // Single variable ref - clear the entire property
-                  if (propertyName === 'strokes' && 'strokes' in node) {
-                    (node as any).strokes = [];
-                  } else if (propertyName === 'fills' && 'fills' in node) {
-                    (node as any).fills = [];
-                  }
-                  // Add other properties as needed
+                } catch (error) {
+                  console.error(
+                    `Error processing property ${propertyName} on node ${node.id}:`,
+                    error
+                  );
                 }
-
-                nodeModified = true;
               }
             }
-          }
-        );
-      }
+          );
+        }
 
-      // Check component properties if it's an instance
-      if (node.type === 'INSTANCE' && 'componentProperties' in node) {
-        const componentProperties = node.componentProperties;
+        // Check component properties if it's an instance
+        if (node.type === 'INSTANCE' && 'componentProperties' in node) {
+          const componentProperties = node.componentProperties;
 
-        Object.entries(componentProperties).forEach(
-          ([propertyName, property]) => {
-            if (property.boundVariables && property.boundVariables.value) {
-              const variableRef = property.boundVariables.value;
-              if (
-                variableRef.type === 'VARIABLE_ALIAS' &&
-                variableRef.id === visualizerVariableId
-              ) {
-                // Component properties are not cleared
+          Object.entries(componentProperties).forEach(
+            ([propertyName, property]) => {
+              if (property.boundVariables && property.boundVariables.value) {
+                const variableRef = property.boundVariables.value;
+                if (
+                  variableRef.type === 'VARIABLE_ALIAS' &&
+                  variableRef.id === visualizerVariableId
+                ) {
+                  // Component properties are not cleared
+                }
               }
             }
-          }
-        );
-      }
+          );
+        }
 
-      if (nodeModified) {
-        clearedCount++;
-        emit(ACCENT_STYLING_APPLIED, { nodeId: node.id, action: 'cleared' });
-      }
+        if (nodeModified) {
+          clearedCount++;
+          emit(ACCENT_STYLING_APPLIED, { nodeId: node.id, action: 'cleared' });
+        }
 
-      // Recursively search children
-      if ('children' in node) {
-        node.children.forEach(clearVisualizerFromNode);
+        // Recursively search children
+        if ('children' in node) {
+          node.children.forEach(clearVisualizerFromNode);
+        }
+      } catch (error) {
+        console.error(`Error clearing visualizer from node ${node.id}:`, error);
       }
     };
 
