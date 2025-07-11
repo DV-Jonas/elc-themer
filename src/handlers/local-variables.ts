@@ -3,7 +3,7 @@ import {
   LOCAL_VARIABLES,
   NODES_WITH_VARIABLE,
   ACCENT_STYLING_APPLIED,
-  CLEAR_ALL_VISUALIZER_STYLING,
+  CLEAR_VISUALIZATIONS,
 } from '../events';
 import config from '../../config';
 
@@ -18,6 +18,11 @@ type NodeWithVariable = {
   name: string;
   type: string;
   properties: string[]; // Properties that use the variable (e.g., 'fills', 'strokes', 'width', etc.)
+  parentComponent?: {
+    id: string;
+    name: string;
+    type: string;
+  };
 };
 
 // Track nodes that have been styled with accent
@@ -81,6 +86,28 @@ const searchNodesWithVariableHandler = async (variableId: string) => {
   try {
     const nodesWithVariable: NodeWithVariable[] = [];
 
+    // Helper function to find outermost parent component (INSTANCE)
+    const findParentComponent = (
+      node: BaseNode
+    ): { id: string; name: string; type: string } | null => {
+      let current = node.parent;
+      let outermostInstance = null;
+
+      // Walk up the tree and keep track of the outermost INSTANCE
+      while (current) {
+        if (current.type === 'INSTANCE') {
+          outermostInstance = {
+            id: current.id,
+            name: current.name,
+            type: current.type,
+          };
+        }
+        current = current.parent;
+      }
+
+      return outermostInstance;
+    };
+
     // Helper function to recursively search through nodes
     const searchNode = (node: BaseNode) => {
       // Check if this node has bound variables
@@ -103,12 +130,6 @@ const searchNodesWithVariableHandler = async (variableId: string) => {
                   ref.type === 'VARIABLE_ALIAS' &&
                   ref.id === variableId
                 ) {
-                  // Only log if it's a stroke property (what we care about)
-                  if (propertyName === 'strokes') {
-                    console.log(
-                      `✅ FOUND: Node "${node.name}" (${node.type}) uses variable for STROKES`
-                    );
-                  }
                   propertiesUsingVariable.push(propertyName);
                 }
               });
@@ -118,11 +139,26 @@ const searchNodesWithVariableHandler = async (variableId: string) => {
 
         // If this node uses the variable, add it to the results
         if (propertiesUsingVariable.length > 0) {
+          let parentComponent = null;
+
+          // If the node itself is an INSTANCE, use it as its own component
+          if (node.type === 'INSTANCE') {
+            parentComponent = {
+              id: node.id,
+              name: node.name,
+              type: node.type,
+            };
+          } else {
+            // Otherwise, find the nearest parent INSTANCE
+            parentComponent = findParentComponent(node);
+          }
+
           nodesWithVariable.push({
             id: node.id,
             name: node.name,
             type: node.type,
             properties: propertiesUsingVariable,
+            parentComponent: parentComponent || undefined,
           });
         }
       }
@@ -149,11 +185,26 @@ const searchNodesWithVariableHandler = async (variableId: string) => {
         );
 
         if (propertiesUsingVariable.length > 0) {
+          let parentComponent = null;
+
+          // If the node itself is an INSTANCE, use it as its own component
+          if (node.type === 'INSTANCE') {
+            parentComponent = {
+              id: node.id,
+              name: node.name,
+              type: node.type,
+            };
+          } else {
+            // Otherwise, find the nearest parent INSTANCE
+            parentComponent = findParentComponent(node);
+          }
+
           nodesWithVariable.push({
             id: node.id,
             name: node.name,
             type: node.type,
             properties: propertiesUsingVariable,
+            parentComponent: parentComponent || undefined,
           });
         }
       }
@@ -250,16 +301,7 @@ const applyAccentStylingHandler = async (nodeId: string) => {
       // Track this node as styled
       styledNodeIds.add(nodeId);
 
-      console.log(
-        `Applied Colors/visualizer styling to ${node.type.toLowerCase()}: ${
-          node.name
-        }`
-      );
       emit(ACCENT_STYLING_APPLIED, { nodeId, action: 'applied' });
-    } else {
-      console.log(
-        `Node type ${node.type} is not applicable for visualizer styling (must be FRAME or INSTANCE with strokes)`
-      );
     }
   } catch (error) {
     console.error('Error applying accent styling:', error);
@@ -298,11 +340,6 @@ const clearAccentStylingHandler = async (nodeId: string) => {
       // Remove from styled nodes tracking
       styledNodeIds.delete(nodeId);
 
-      console.log(
-        `Cleared visualizer styling from ${node.type.toLowerCase()}: ${
-          node.name
-        }`
-      );
       emit(ACCENT_STYLING_APPLIED, { nodeId, action: 'cleared' });
     }
   } catch (error) {
@@ -373,10 +410,6 @@ const clearAllVisualizerStylingHandler = async () => {
               );
 
               if (hasVisualizerVariable) {
-                console.log(
-                  `🧹 Clearing Colors/visualizer from ${node.name} (${node.type}) property: ${propertyName}`
-                );
-
                 // For arrays of variables, remove only the visualizer variable
                 if (Array.isArray(variableRefs)) {
                   const newRefs = refs.filter(
@@ -431,9 +464,7 @@ const clearAllVisualizerStylingHandler = async () => {
                 variableRef.type === 'VARIABLE_ALIAS' &&
                 variableRef.id === visualizerVariableId
               ) {
-                console.log(
-                  `🧹 Found Colors/visualizer in ${node.name} (${node.type}) component property: ${propertyName} - skipping (component properties not cleared)`
-                );
+                // Component properties are not cleared
               }
             }
           }
@@ -458,8 +489,6 @@ const clearAllVisualizerStylingHandler = async () => {
     styledNodeIds.clear();
     originalStrokes.clear();
     originalStrokeWeights.clear();
-
-    console.log(`🎉 Cleared Colors/visualizer from ${clearedCount} nodes`);
   } catch (error) {
     console.error('Error clearing all visualizer styling:', error);
   }
