@@ -1,4 +1,5 @@
 import { h } from 'preact';
+import { Search, Check, Hammer } from 'lucide-preact';
 import type { Status } from './state-manager';
 
 type FeedbackProps = {
@@ -24,15 +25,30 @@ const Feedback = ({ status, foundNodeCount }: FeedbackProps) => {
   const steps = [];
 
   if (status === 'searching' || status === 'found' || status === 'applying') {
-    steps.push(<div>- Searching...</div>);
+    steps.push(
+      <div class='flex items-center gap-2'>
+        <Search size={12} />
+        <span>Searching...</span>
+      </div>
+    );
   }
 
   if (status === 'found' || status === 'applying') {
-    steps.push(<div>- Found {foundNodeCount} layers</div>);
+    steps.push(
+      <div class='flex items-center gap-2'>
+        <Check size={12} />
+        <span>Found {foundNodeCount} layers</span>
+      </div>
+    );
   }
 
   if (status === 'applying') {
-    steps.push(<div>- Applying styling</div>);
+    steps.push(
+      <div class='flex items-center gap-2'>
+        <Hammer size={12} />
+        <span>Applying styling</span>
+      </div>
+    );
   }
 
   return <div class='text-sm text-gray-600 space-y-1'>{steps}</div>;

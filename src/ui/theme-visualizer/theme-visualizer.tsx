@@ -10,6 +10,68 @@ import Feedback from './feedback';
 const ThemeVisualizer = () => {
   const [state, actions] = useVisualizerState();
 
+  // TEMP: Mock data for styling
+  const mockNodes = [
+    {
+      id: '1',
+      name: 'Button Frame',
+      type: 'FRAME',
+      properties: ['cornerRadius'],
+      parentComponent: {
+        id: 'btn1',
+        name: 'Button Primary',
+        type: 'COMPONENT',
+      },
+    },
+    {
+      id: '2',
+      name: 'Background',
+      type: 'RECTANGLE',
+      properties: ['cornerRadius'],
+      parentComponent: {
+        id: 'btn1',
+        name: 'Button Primary',
+        type: 'COMPONENT',
+      },
+    },
+    {
+      id: '3',
+      name: 'Card Container',
+      type: 'FRAME',
+      properties: ['cornerRadius'],
+      parentComponent: { id: 'card1', name: 'Card Default', type: 'COMPONENT' },
+    },
+    {
+      id: '4',
+      name: 'Input Field',
+      type: 'FRAME',
+      properties: ['cornerRadius'],
+      parentComponent: { id: 'input1', name: 'Input Text', type: 'COMPONENT' },
+    },
+    {
+      id: '5',
+      name: 'Modal Background',
+      type: 'RECTANGLE',
+      properties: ['cornerRadius'],
+      parentComponent: {
+        id: 'modal1',
+        name: 'Modal Dialog',
+        type: 'COMPONENT',
+      },
+    },
+  ];
+
+  const mockSelectedVariable = {
+    id: 'var1',
+    name: 'border-radius / lg',
+    collectionName: 'Spacing',
+  };
+
+  // Use mock data when available, otherwise use real state
+  const nodesToUse =
+    state.nodesWithVariable.length > 0 ? state.nodesWithVariable : mockNodes;
+  const selectedVariableToUse = state.selectedVariable || mockSelectedVariable;
+
   const isDisabled =
     (!state.value || !state.selectedVariable) && !state.hasAppliedStyling;
 
@@ -47,7 +109,7 @@ const ThemeVisualizer = () => {
     return grouped;
   };
 
-  const groupedNodes = groupNodesByComponent(state.nodesWithVariable);
+  const groupedNodes = groupNodesByComponent(nodesToUse);
   const componentCount = Object.keys(groupedNodes).length;
 
   const handleInput = (event: Event & { currentTarget: HTMLInputElement }) => {
@@ -63,9 +125,9 @@ const ThemeVisualizer = () => {
   };
 
   return (
-    <div class='p-4 space-y-4'>
+    <div class='p-4 flex flex-col gap-4'>
       <div class='flex flex-row gap-2 w-full'>
-        <div class='flex-1'>
+        <div class='grow dark:bg-surface-container-dark bg-surface-container h-[32px]'>
           <TextboxAutocomplete
             {...useInitialFocus()}
             onInput={handleInput}
@@ -88,14 +150,15 @@ const ThemeVisualizer = () => {
 
       <Feedback status={state.status} foundNodeCount={state.foundNodeCount} />
 
-      {state.status === 'complete' && state.nodesWithVariable.length > 0 && (
-        <div class='space-y-2'>
+      {((state.status === 'complete' && state.nodesWithVariable.length > 0) ||
+        nodesToUse.length > 0) && (
+        <div class='space-y-2 h-grow'>
           <h3 class='text-sm font-medium'>
             Found {Object.keys(groupedNodes).length} component
-            {Object.keys(groupedNodes).length === 1 ? '' : 's'} using this
-            variable:
+            {Object.keys(groupedNodes).length === 1 ? '' : 's'} using{' '}
+            <strong>[{selectedVariableToUse?.name}]</strong>
           </h3>
-          <div class='space-y-3 max-h-48 overflow-y-auto'>
+          <div class='space-y-3 overflow-y-auto'>
             {Object.entries(groupedNodes).map(([componentKey, nodes]) => {
               // Extract clean component name from the key
               const componentName = componentKey.includes('_')
@@ -103,11 +166,14 @@ const ThemeVisualizer = () => {
                 : componentKey;
 
               return (
-                <div key={componentKey} class='space-y-1'>
-                  <div class='font-medium text-sm bg-gray-100 px-2 py-1 rounded'>
+                <div
+                  key={componentKey}
+                  class='flex flex-col dark:bg-surface-container-dark rounded-sm'
+                >
+                  <div class='font-bold text-md border-b-2 p-2 dark:border-surface-dark'>
                     {stripEmojis(componentName)}
                   </div>
-                  <div class='space-y-1 ml-3'>
+                  <div class='flex flex-col gap-2 p-2'>
                     {nodes.map((node: any) => (
                       <div key={node.id} class='text-sm'>
                         <span class='font-medium'>
@@ -125,15 +191,6 @@ const ThemeVisualizer = () => {
           </div>
         </div>
       )}
-
-      {state.status === 'complete' &&
-        state.nodesWithVariable.length === 0 &&
-        state.selectedVariable &&
-        !state.hasAppliedStyling && (
-          <div class='text-sm text-gray-600'>
-            No nodes found using this variable on the current page.
-          </div>
-        )}
     </div>
   );
 };
