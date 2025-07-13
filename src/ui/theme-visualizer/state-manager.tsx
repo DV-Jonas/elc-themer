@@ -165,16 +165,11 @@ export const useVisualizerState = (): [VisualizerState, VisualizerActions] => {
           setStyledNodes((prev) => {
             const newSet = new Set(prev);
             newSet.add(data.nodeId);
-
-            // If this is the first node applied during styling, wait then complete
-            if (status === 'applying') {
-              setTimeout(() => {
-                setStatus('complete');
-              }, 300);
-            }
-
             return newSet;
           });
+
+          // Always set to complete when styling is applied
+          setStatus('complete');
         } else {
           // Clearing - reset everything immediately
           setStyledNodes(new Set());
@@ -187,14 +182,16 @@ export const useVisualizerState = (): [VisualizerState, VisualizerActions] => {
       }
     );
 
-    emit(GET_LOCAL_VARIABLES);
-
     return () => {
       unsubscribeVariables();
       unsubscribeNodes();
       unsubscribeAccent();
     };
-  }, [status, styledNodes.size]);
+  }, []);
+
+  useEffect(() => {
+    emit(GET_LOCAL_VARIABLES);
+  }, []);
 
   const onInput = (newValue: string) => {
     setValue(newValue);

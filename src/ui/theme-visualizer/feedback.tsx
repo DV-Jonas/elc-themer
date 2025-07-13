@@ -1,5 +1,5 @@
 import { h } from 'preact';
-import { Search, Check, Hammer } from 'lucide-preact';
+import { Search, Check, Hammer, Trash } from 'lucide-preact';
 import type { Status } from './state-manager';
 
 type FeedbackProps = {
@@ -16,7 +16,10 @@ const Feedback = ({ status, foundNodeCount }: FeedbackProps) => {
   if (status === 'clearing') {
     return (
       <div class='text-sm text-gray-600 space-y-1'>
-        <div>- Clearing styles...</div>
+        <div class='flex items-center gap-2'>
+          <Trash size={12} />
+          <span>Clearing styles...</span>
+        </div>
       </div>
     );
   }

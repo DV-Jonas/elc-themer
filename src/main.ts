@@ -13,6 +13,7 @@ import {
   SEARCH_NODES_WITH_VARIABLE,
   APPLY_ACCENT_STYLING,
   CLEAR_VISUALIZATIONS,
+  ZOOM_TO_COMPONENT,
 } from './events';
 import tokens from '../tokens.json';
 import { onToggleFavoriteHandler } from './handlers/actions';
@@ -52,6 +53,18 @@ export default async function () {
     }, 100);
   };
 
+  const onZoomToComponent = async (componentId: string) => {
+    try {
+      const node = await figma.getNodeByIdAsync(componentId);
+      if (node && node.type !== 'DOCUMENT' && node.type !== 'PAGE') {
+        figma.viewport.scrollAndZoomIntoView([node]);
+        figma.currentPage.selection = [node as SceneNode];
+      }
+    } catch (error) {
+      console.error('Error zooming to component:', error);
+    }
+  };
+
   showUI({
     height: tokens.plugin.size.height,
     width: tokens.plugin.size.width,
@@ -65,6 +78,7 @@ export default async function () {
   on(SEARCH_NODES_WITH_VARIABLE, searchNodesWithVariableHandler);
   on(APPLY_ACCENT_STYLING, applyAccentStylingHandler);
   on(CLEAR_VISUALIZATIONS, clearAllVisualizerStylingHandler);
+  on(ZOOM_TO_COMPONENT, onZoomToComponent);
 
   emit(THEMES, themes);
 }

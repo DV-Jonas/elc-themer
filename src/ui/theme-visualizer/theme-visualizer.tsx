@@ -3,74 +3,14 @@ import {
   TextboxAutocomplete,
   useInitialFocus,
 } from 'node_modules/@create-figma-plugin/ui/lib';
+import { emit } from '@create-figma-plugin/utilities';
 import Button from '../../components/button';
 import { useVisualizerState } from './state-manager';
 import Feedback from './feedback';
+import { ZOOM_TO_COMPONENT } from '../../events';
 
 const ThemeVisualizer = () => {
   const [state, actions] = useVisualizerState();
-
-  // TEMP: Mock data for styling
-  const mockNodes = [
-    {
-      id: '1',
-      name: 'Button Frame',
-      type: 'FRAME',
-      properties: ['cornerRadius'],
-      parentComponent: {
-        id: 'btn1',
-        name: 'Button Primary',
-        type: 'COMPONENT',
-      },
-    },
-    {
-      id: '2',
-      name: 'Background',
-      type: 'RECTANGLE',
-      properties: ['cornerRadius'],
-      parentComponent: {
-        id: 'btn1',
-        name: 'Button Primary',
-        type: 'COMPONENT',
-      },
-    },
-    {
-      id: '3',
-      name: 'Card Container',
-      type: 'FRAME',
-      properties: ['cornerRadius'],
-      parentComponent: { id: 'card1', name: 'Card Default', type: 'COMPONENT' },
-    },
-    {
-      id: '4',
-      name: 'Input Field',
-      type: 'FRAME',
-      properties: ['cornerRadius'],
-      parentComponent: { id: 'input1', name: 'Input Text', type: 'COMPONENT' },
-    },
-    {
-      id: '5',
-      name: 'Modal Background',
-      type: 'RECTANGLE',
-      properties: ['cornerRadius'],
-      parentComponent: {
-        id: 'modal1',
-        name: 'Modal Dialog',
-        type: 'COMPONENT',
-      },
-    },
-  ];
-
-  const mockSelectedVariable = {
-    id: 'var1',
-    name: 'border-radius / lg',
-    collectionName: 'Spacing',
-  };
-
-  // Use mock data when available, otherwise use real state
-  const nodesToUse =
-    state.nodesWithVariable.length > 0 ? state.nodesWithVariable : mockNodes;
-  const selectedVariableToUse = state.selectedVariable || mockSelectedVariable;
 
   const isDisabled =
     (!state.value || !state.selectedVariable) && !state.hasAppliedStyling;
@@ -109,7 +49,7 @@ const ThemeVisualizer = () => {
     return grouped;
   };
 
-  const groupedNodes = groupNodesByComponent(nodesToUse);
+  const groupedNodes = groupNodesByComponent(state.nodesWithVariable);
   const componentCount = Object.keys(groupedNodes).length;
 
   const handleInput = (event: Event & { currentTarget: HTMLInputElement }) => {
@@ -122,6 +62,10 @@ const ThemeVisualizer = () => {
     } else {
       actions.onApply();
     }
+  };
+
+  const handleComponentClick = (componentId: string) => {
+    emit(ZOOM_TO_COMPONENT, componentId);
   };
 
   return (
@@ -150,13 +94,12 @@ const ThemeVisualizer = () => {
 
       <Feedback status={state.status} foundNodeCount={state.foundNodeCount} />
 
-      {((state.status === 'complete' && state.nodesWithVariable.length > 0) ||
-        nodesToUse.length > 0) && (
+      {state.status === 'complete' && state.nodesWithVariable.length > 0 && (
         <div class='space-y-2 h-grow'>
           <h3 class='text-sm font-medium'>
             Found {Object.keys(groupedNodes).length} component
             {Object.keys(groupedNodes).length === 1 ? '' : 's'} using{' '}
-            <strong>[{selectedVariableToUse?.name}]</strong>
+            <strong>[{state.selectedVariable?.name}]</strong>
           </h3>
           <div class='space-y-3 overflow-y-auto'>
             {Object.entries(groupedNodes).map(([componentKey, nodes]) => {
@@ -165,13 +108,23 @@ const ThemeVisualizer = () => {
                 ? componentKey.split('_')[0]
                 : componentKey;
 
+              const cleanComponentName = stripEmojis(componentName);
+              const capitalizedComponentName =
+                cleanComponentName.charAt(0).toUpperCase() +
+                cleanComponentName.slice(1);
+
               return (
                 <div
                   key={componentKey}
-                  class='flex flex-col dark:bg-surface-container-dark rounded-sm'
+                  class='flex flex-col dark:bg-surface-container-dark rounded-sm cursor-pointer hover:bg-surface-container-high dark:hover:bg-surface-container-high-dark transition-colors hover:pointer'
+                  onClick={() =>
+                    handleComponentClick(
+                      nodes[0]?.parentComponent?.id || nodes[0]?.id
+                    )
+                  }
                 >
                   <div class='font-bold text-md border-b-2 p-2 dark:border-surface-dark'>
-                    {stripEmojis(componentName)}
+                    {capitalizedComponentName}
                   </div>
                   <div class='flex flex-col gap-2 p-2'>
                     {nodes.map((node: any) => (
