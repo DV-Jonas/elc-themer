@@ -420,11 +420,22 @@ const applyAccentStylingHandler = async (data: {
         properties.includes('paddingBottom') ||
         properties.includes('itemSpacing'));
 
+    const canApplyBorderRadiusVisualizer =
+      (node.type === 'FRAME' ||
+        node.type === 'RECTANGLE' ||
+        node.type === 'INSTANCE') &&
+      (properties.includes('cornerRadius') ||
+        properties.includes('topLeftRadius') ||
+        properties.includes('topRightRadius') ||
+        properties.includes('bottomLeftRadius') ||
+        properties.includes('bottomRightRadius'));
+
     if (
       canApplyStroke ||
       canApplyFill ||
       canApplyTypographyVisualizer ||
-      canApplySpacingVisualizer
+      canApplySpacingVisualizer ||
+      canApplyBorderRadiusVisualizer
     ) {
       const visualizerVariable = await getVisualizerVariable();
       if (!visualizerVariable) {
@@ -580,6 +591,40 @@ const applyAccentStylingHandler = async (data: {
                 gapRect.y = frameNode.y + child1.y + child1.height;
               }
             }
+          }
+        }
+      }
+
+      // Apply border radius visualizer if the searched variable is used for border radius properties
+      if (
+        (node.type === 'FRAME' ||
+          node.type === 'RECTANGLE' ||
+          node.type === 'INSTANCE') &&
+        (properties.includes('cornerRadius') ||
+          properties.includes('topLeftRadius') ||
+          properties.includes('topRightRadius') ||
+          properties.includes('bottomLeftRadius') ||
+          properties.includes('bottomRightRadius'))
+      ) {
+        const nodeWithRadius = node as any; // Use any type for broader node support
+
+        // Create orange stroke for border radius visualization
+        let radiusPaint = figma.util.solidPaint('#FF6B35'); // Orange
+        radiusPaint = figma.variables.setBoundVariableForPaint(
+          radiusPaint,
+          'color',
+          visualizerVariable
+        );
+
+        if ('strokes' in nodeWithRadius) {
+          const currentStrokes = nodeWithRadius.strokes;
+          const existingStrokes = Array.from(currentStrokes);
+          existingStrokes.push(radiusPaint);
+          nodeWithRadius.strokes = existingStrokes;
+
+          // Set stroke weight if not already set
+          if (nodeWithRadius.strokeWeight === 0) {
+            nodeWithRadius.strokeWeight = 2;
           }
         }
       }
