@@ -116,48 +116,6 @@ export const useVisualizerState = (): [VisualizerState, VisualizerActions] => {
     return options;
   };
 
-  const canApplyVisualizer = (node: NodeWithVariable) => {
-    // For stroke properties, only FRAME and INSTANCE support additional strokes
-    const canApplyStroke =
-      (node.type === 'FRAME' || node.type === 'INSTANCE') &&
-      node.properties.includes('strokes');
-
-    // For fill properties, multiple node types support fills
-    const canApplyFill =
-      (node.type === 'FRAME' ||
-        node.type === 'INSTANCE' ||
-        node.type === 'VECTOR' ||
-        node.type === 'TEXT' ||
-        node.type === 'ELLIPSE' ||
-        node.type === 'RECTANGLE' ||
-        node.type === 'POLYGON' ||
-        node.type === 'STAR') &&
-      node.properties.includes('fills');
-
-    // For fontSize, fontWeight, and fontStyle properties, apply fill visualizer to TEXT nodes to highlight typography variable usage
-    const canApplyTypographyVisualizer =
-      node.type === 'TEXT' &&
-      (node.properties.includes('fontSize') ||
-        node.properties.includes('fontWeight') ||
-        node.properties.includes('fontStyle'));
-
-    // For spacing properties, apply spacing visualizer to FRAME nodes to highlight layout spacing
-    const canApplySpacingVisualizer =
-      node.type === 'FRAME' &&
-      (node.properties.includes('paddingTop') ||
-        node.properties.includes('paddingRight') ||
-        node.properties.includes('paddingLeft') ||
-        node.properties.includes('paddingBottom') ||
-        node.properties.includes('itemSpacing'));
-
-    return (
-      canApplyStroke ||
-      canApplyFill ||
-      canApplyTypographyVisualizer ||
-      canApplySpacingVisualizer
-    );
-  };
-
   useEffect(() => {
     const unsubscribeVariables = on(
       LOCAL_VARIABLES,
@@ -174,13 +132,11 @@ export const useVisualizerState = (): [VisualizerState, VisualizerActions] => {
         setFoundNodeCount(nodes.length);
         setStatus('found');
 
-        const applicableNodes = nodes.filter(canApplyVisualizer);
-
-        if (applicableNodes.length > 0) {
+        if (nodes.length > 0) {
           // Show "found" message briefly, then start applying
           setTimeout(() => {
             setStatus('applying');
-            applicableNodes.forEach((node) => {
+            nodes.forEach((node) => {
               emit(APPLY_ACCENT_STYLING, {
                 nodeId: node.id,
                 properties: node.properties,
@@ -188,7 +144,7 @@ export const useVisualizerState = (): [VisualizerState, VisualizerActions] => {
             });
           }, 300);
         } else {
-          // No applicable nodes, wait then finish
+          // No nodes found, wait then finish
           setTimeout(() => {
             setStatus('complete');
           }, 300);
