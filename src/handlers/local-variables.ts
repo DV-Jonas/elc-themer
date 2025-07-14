@@ -28,6 +28,155 @@ type NodeWithVariable = {
 // Track nodes that have been styled with accent
 const styledNodeIds = new Set<string>();
 
+// Helper function to get the visualizer variable
+const getVisualizerVariable = async (): Promise<Variable | null> => {
+  try {
+    // Get all local collections
+    const allLocalCollections =
+      await figma.variables.getLocalVariableCollectionsAsync();
+
+    // Find the 0.presentation collection
+    const presentationCollection = allLocalCollections.find(
+      (collection) => collection.name === '0.presentation'
+    );
+
+    if (!presentationCollection) {
+      console.error('0.presentation collection not found');
+      return null;
+    }
+
+    // Find the Colors/visualizer variable
+    const variables = await Promise.all(
+      presentationCollection.variableIds.map(async (id) => {
+        return await figma.variables.getVariableByIdAsync(id);
+      })
+    );
+
+    const visualizerVariable = variables.find(
+      (variable) => variable && variable.name === 'Colors/visualizer'
+    );
+
+    if (!visualizerVariable) {
+      console.error(
+        'Colors/visualizer variable not found in 0.presentation collection'
+      );
+      return null;
+    }
+
+    return visualizerVariable;
+  } catch (error) {
+    console.error('Error getting visualizer variable:', error);
+    return null;
+  }
+};
+
+// Helper function to check if node supports visualization
+const nodeSupportsVisualization = (node: BaseNode): boolean => {
+  const nodeSupportsStrokes =
+    (node.type === 'FRAME' || node.type === 'INSTANCE') && 'strokes' in node;
+  const nodeSupportsFills =
+    (node.type === 'FRAME' ||
+      node.type === 'INSTANCE' ||
+      node.type === 'VECTOR' ||
+      node.type === 'TEXT' ||
+      node.type === 'ELLIPSE' ||
+      node.type === 'RECTANGLE' ||
+      node.type === 'POLYGON' ||
+      node.type === 'STAR') &&
+    'fills' in node;
+
+  return nodeSupportsStrokes || nodeSupportsFills;
+};
+
+// Helper function to clear visualizer paints from a single node
+const clearVisualizerFromSingleNode = (
+  node: BaseNode,
+  visualizerVariableId: string
+): boolean => {
+  let nodeModified = false;
+
+  try {
+    if (!nodeSupportsVisualization(node)) {
+      return false;
+    }
+
+    // Remove strokes that are bound to the visualizer variable
+    if ('strokes' in node) {
+      const currentStrokes = (node as FrameNode | InstanceNode).strokes;
+      const filteredStrokes = currentStrokes.filter((stroke) => {
+        if (stroke.type === 'SOLID' && stroke.boundVariables?.color) {
+          const colorVar = stroke.boundVariables.color;
+          const isVisualizerStroke =
+            colorVar.type === 'VARIABLE_ALIAS' &&
+            colorVar.id === visualizerVariableId;
+          return !isVisualizerStroke;
+        }
+        return true;
+      });
+
+      if (filteredStrokes.length !== currentStrokes.length) {
+        (node as FrameNode | InstanceNode).strokes = filteredStrokes;
+        nodeModified = true;
+      }
+    }
+
+    // Remove fills that are bound to the visualizer variable
+    if ('fills' in node) {
+      const nodeWithFills = node as any; // Use any type for broader node support
+      const currentFills = nodeWithFills.fills;
+      if (currentFills !== figma.mixed && Array.isArray(currentFills)) {
+        const filteredFills = currentFills.filter((fill) => {
+          if (fill.type === 'SOLID' && fill.boundVariables?.color) {
+            const colorVar = fill.boundVariables.color;
+            const isVisualizerFill =
+              colorVar.type === 'VARIABLE_ALIAS' &&
+              colorVar.id === visualizerVariableId;
+            return !isVisualizerFill;
+          }
+          return true;
+        });
+
+        if (filteredFills.length !== currentFills.length) {
+          nodeWithFills.fills = filteredFills;
+          nodeModified = true;
+        }
+      }
+    }
+
+    // Clear spacing visualizations for FRAME nodes
+    if (node.type === 'FRAME') {
+      const frameNode = node as FrameNode;
+
+      // Reset stroke align to default (it gets set to INSIDE for padding visualization)
+      if (frameNode.strokes.length === 0) {
+        frameNode.strokeAlign = 'CENTER'; // Reset to default
+        nodeModified = true;
+      }
+
+      // Remove gap visualization rectangles from parent
+      const parent = frameNode.parent;
+      if (parent && 'children' in parent) {
+        const gapVizElements = parent.children.filter(
+          (child) => child.name === 'GAP_VIZ'
+        );
+
+        gapVizElements.forEach((element) => {
+          element.remove();
+        });
+
+        if (gapVizElements.length > 0) {
+          nodeModified = true;
+        }
+      }
+    }
+
+    return nodeModified;
+  } catch (error) {
+    console.error(`Error clearing visualizer from node ${node.id}:`, error);
+    return false;
+  }
+};
+
 const getLocalVariablesHandler = async () => {
   try {
     // Get all local collections
@@ -277,35 +426,8 @@ const applyAccentStylingHandler = async (data: {
       canApplyTypographyVisualizer ||
       canApplySpacingVisualizer
     ) {
-      // Get all local collections
-      const allLocalCollections =
-        await figma.variables.getLocalVariableCollectionsAsync();
-
-      // Find the 0.presentation collection
-      const presentationCollection = allLocalCollections.find(
-        (collection) => collection.name === '0.presentation'
-      );
-
-      if (!presentationCollection) {
-        console.error('0.presentation collection not found');
-        return;
-      }
-
-      // Find the accent-1 variable
-      const variables = await Promise.all(
-        presentationCollection.variableIds.map(async (id) => {
-          return await figma.variables.getVariableByIdAsync(id);
-        })
-      );
-
-      const visualizerVariable = variables.find(
-        (variable) => variable && variable.name === 'Colors/visualizer'
-      );
-
+      const visualizerVariable = await getVisualizerVariable();
       if (!visualizerVariable) {
-        console.error(
-          'Colors/visualizer variable not found in 0.presentation collection'
-        );
         return;
       }
 
@@ -472,294 +594,35 @@ const applyAccentStylingHandler = async (data: {
   }
 };
 
-const clearAccentStylingHandler = async (nodeId: string) => {
-  try {
-    const node = await figma.getNodeByIdAsync(nodeId);
-    if (!node || !('type' in node)) {
-      console.error(`Node with ID ${nodeId} not found or is not a SceneNode.`);
-      return;
-    }
-
-    // Check if we can clear visualizers from this node type
-    const nodeSupportsStrokes =
-      (node.type === 'FRAME' || node.type === 'INSTANCE') && 'strokes' in node;
-    const nodeSupportsFills =
-      (node.type === 'FRAME' ||
-        node.type === 'INSTANCE' ||
-        node.type === 'VECTOR' ||
-        node.type === 'TEXT' ||
-        node.type === 'ELLIPSE' ||
-        node.type === 'RECTANGLE' ||
-        node.type === 'POLYGON' ||
-        node.type === 'STAR') &&
-      'fills' in node;
-
-    if (nodeSupportsStrokes || nodeSupportsFills) {
-      // Get all local collections to find Colors/visualizer variable
-      const allLocalCollections =
-        await figma.variables.getLocalVariableCollectionsAsync();
-
-      // Find the 0.presentation collection
-      const presentationCollection = allLocalCollections.find(
-        (collection) => collection.name === '0.presentation'
-      );
-
-      if (!presentationCollection) {
-        console.error('0.presentation collection not found');
-        return;
-      }
-
-      // Find the Colors/visualizer variable
-      const variables = await Promise.all(
-        presentationCollection.variableIds.map(async (id) => {
-          return await figma.variables.getVariableByIdAsync(id);
-        })
-      );
-
-      const visualizerVariable = variables.find(
-        (variable) => variable && variable.name === 'Colors/visualizer'
-      );
-
-      if (!visualizerVariable) {
-        console.error(
-          'Colors/visualizer variable not found in 0.presentation collection'
-        );
-        return;
-      }
-
-      // Remove strokes that are bound to the visualizer variable
-      if ('strokes' in node) {
-        const currentStrokes = (node as FrameNode | InstanceNode).strokes;
-        const filteredStrokes = currentStrokes.filter((stroke) => {
-          if (stroke.type === 'SOLID' && stroke.boundVariables?.color) {
-            const colorVar = stroke.boundVariables.color;
-            const isVisualizerStroke =
-              colorVar.type === 'VARIABLE_ALIAS' &&
-              colorVar.id === visualizerVariable.id;
-            return !isVisualizerStroke;
-          }
-          return true;
-        });
-
-        (node as FrameNode | InstanceNode).strokes = filteredStrokes;
-      }
-
-      // Remove fills that are bound to the visualizer variable
-      if ('fills' in node) {
-        const nodeWithFills = node as any; // Use any type for broader node support
-        const currentFills = nodeWithFills.fills;
-        if (currentFills !== figma.mixed && Array.isArray(currentFills)) {
-          const filteredFills = currentFills.filter((fill) => {
-            if (fill.type === 'SOLID' && fill.boundVariables?.color) {
-              const colorVar = fill.boundVariables.color;
-              const isVisualizerFill =
-                colorVar.type === 'VARIABLE_ALIAS' &&
-                colorVar.id === visualizerVariable.id;
-              return !isVisualizerFill;
-            }
-            return true;
-          });
-
-          nodeWithFills.fills = filteredFills;
-        }
-      }
-
-      // Clear spacing visualizations for FRAME nodes
-      if (node.type === 'FRAME') {
-        const frameNode = node as FrameNode;
-
-        // Reset stroke align to default (it gets set to INSIDE for padding visualization)
-        if (frameNode.strokes.length === 0) {
-          frameNode.strokeAlign = 'CENTER'; // Reset to default
-        }
-
-        // Remove gap visualization rectangles from parent
-        const parent = frameNode.parent;
-        if (parent && 'children' in parent) {
-          const gapVizElements = parent.children.filter(
-            (child) => child.name === 'GAP_VIZ'
-          );
-
-          gapVizElements.forEach((element) => {
-            element.remove();
-          });
-        }
-      }
-
-      // Remove from styled nodes tracking
-      styledNodeIds.delete(nodeId);
-
-      emit(ACCENT_STYLING_APPLIED, { nodeId, action: 'cleared' });
-    }
-  } catch (error) {
-    console.error('Error clearing accent styling:', error);
-  }
-};
-
 const clearAllVisualizerStylingHandler = async () => {
   try {
-    // Get all local collections to find Colors/visualizer variable
-    const allLocalCollections =
-      await figma.variables.getLocalVariableCollectionsAsync();
-
-    // Find the 0.presentation collection
-    const presentationCollection = allLocalCollections.find(
-      (collection) => collection.name === '0.presentation'
-    );
-
-    if (!presentationCollection) {
-      console.error('0.presentation collection not found');
-      return;
-    }
-
-    // Find the Colors/visualizer variable
-    const variables = await Promise.all(
-      presentationCollection.variableIds.map(async (id) => {
-        return await figma.variables.getVariableByIdAsync(id);
-      })
-    );
-
-    const visualizerVariable = variables.find(
-      (variable) => variable && variable.name === 'Colors/visualizer'
-    );
-
+    const visualizerVariable = await getVisualizerVariable();
     if (!visualizerVariable) {
-      console.error(
-        'Colors/visualizer variable not found in 0.presentation collection'
-      );
       return;
     }
 
-    const visualizerVariableId = visualizerVariable.id;
     let clearedCount = 0;
 
-    // Helper function to clear visualizer from a node
+    // Helper function to recursively clear visualizer from nodes
     const clearVisualizerFromNode = (node: BaseNode) => {
       // Skip hidden nodes
       if ('visible' in node && !node.visible) {
         return;
       }
 
-      let nodeModified = false;
+      const nodeModified = clearVisualizerFromSingleNode(
+        node,
+        visualizerVariable.id
+      );
 
-      try {
-        // Check if the node supports strokes and fills and clear visualizer paints
-        const nodeSupportsStrokes =
-          (node.type === 'FRAME' || node.type === 'INSTANCE') &&
-          'strokes' in node;
-        const nodeSupportsFills =
-          (node.type === 'FRAME' ||
-            node.type === 'INSTANCE' ||
-            node.type === 'VECTOR' ||
-            node.type === 'TEXT' ||
-            node.type === 'ELLIPSE' ||
-            node.type === 'RECTANGLE' ||
-            node.type === 'POLYGON' ||
-            node.type === 'STAR') &&
-          'fills' in node;
+      if (nodeModified) {
+        clearedCount++;
+        emit(ACCENT_STYLING_APPLIED, { nodeId: node.id, action: 'cleared' });
+      }
 
-        if (nodeSupportsStrokes || nodeSupportsFills) {
-          // Handle strokes
-          if ('strokes' in node) {
-            const currentStrokes = (node as FrameNode | InstanceNode).strokes;
-            const filteredStrokes = currentStrokes.filter((stroke) => {
-              if (stroke.type === 'SOLID' && stroke.boundVariables?.color) {
-                const colorVar = stroke.boundVariables.color;
-                const isVisualizerStroke =
-                  colorVar.type === 'VARIABLE_ALIAS' &&
-                  colorVar.id === visualizerVariableId;
-                return !isVisualizerStroke;
-              }
-              return true;
-            });
-
-            if (filteredStrokes.length !== currentStrokes.length) {
-              (node as FrameNode | InstanceNode).strokes = filteredStrokes;
-              nodeModified = true;
-            }
-          }
-
-          // Handle fills
-          if ('fills' in node) {
-            const nodeWithFills = node as any; // Use any type for broader node support
-            const currentFills = nodeWithFills.fills;
-            if (currentFills !== figma.mixed && Array.isArray(currentFills)) {
-              const filteredFills = currentFills.filter((fill) => {
-                if (fill.type === 'SOLID' && fill.boundVariables?.color) {
-                  const colorVar = fill.boundVariables.color;
-                  const isVisualizerFill =
-                    colorVar.type === 'VARIABLE_ALIAS' &&
-                    colorVar.id === visualizerVariableId;
-                  return !isVisualizerFill;
-                }
-                return true;
-              });
-
-              if (filteredFills.length !== currentFills.length) {
-                nodeWithFills.fills = filteredFills;
-                nodeModified = true;
-              }
-            }
-          }
-        }
-
-        // Check component properties if it's an instance
-        if (node.type === 'INSTANCE' && 'componentProperties' in node) {
-          const componentProperties = node.componentProperties;
-
-          Object.entries(componentProperties).forEach(
-            ([propertyName, property]) => {
-              if (property.boundVariables && property.boundVariables.value) {
-                const variableRef = property.boundVariables.value;
-                if (
-                  variableRef.type === 'VARIABLE_ALIAS' &&
-                  variableRef.id === visualizerVariableId
-                ) {
-                  // Component properties are not cleared
-                }
-              }
-            }
-          );
-        }
-
-        // Clear spacing visualizations for FRAME nodes
-        if (node.type === 'FRAME') {
-          const frameNode = node as FrameNode;
-
-          // Reset stroke align to default (it gets set to INSIDE for padding visualization)
-          if (frameNode.strokes.length === 0) {
-            frameNode.strokeAlign = 'CENTER'; // Reset to default
-            nodeModified = true;
-          }
-
-          // Remove gap visualization rectangles from parent
-          const parent = frameNode.parent;
-          if (parent && 'children' in parent) {
-            const gapVizElements = parent.children.filter(
-              (child) => child.name === 'GAP_VIZ'
-            );
-
-            gapVizElements.forEach((element) => {
-              element.remove();
-            });
-
-            if (gapVizElements.length > 0) {
-              nodeModified = true;
-            }
-          }
-        }
-
-        if (nodeModified) {
-          clearedCount++;
-          emit(ACCENT_STYLING_APPLIED, { nodeId: node.id, action: 'cleared' });
-        }
-
-        // Recursively search children
-        if ('children' in node) {
-          node.children.forEach(clearVisualizerFromNode);
-        }
-      } catch (error) {
-        console.error(`Error clearing visualizer from node ${node.id}:`, error);
+      // Recursively search children
+      if ('children' in node) {
+        node.children.forEach(clearVisualizerFromNode);
       }
     };
 
@@ -777,7 +640,6 @@ export {
   getLocalVariablesHandler,
   searchNodesWithVariableHandler,
   applyAccentStylingHandler,
-  clearAccentStylingHandler,
   clearAllVisualizerStylingHandler,
 };
 export type { LocalVariableData, NodeWithVariable };
