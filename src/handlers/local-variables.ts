@@ -106,6 +106,11 @@ const searchNodesWithVariableHandler = async (variableId: string) => {
 
     // Helper function to recursively search through nodes
     const searchNode = (node: BaseNode) => {
+      // Skip hidden nodes
+      if ('visible' in node && !node.visible) {
+        return;
+      }
+
       // Check if this node has bound variables
       if ('boundVariables' in node && node.boundVariables) {
         const boundVariables = node.boundVariables;
@@ -135,10 +140,6 @@ const searchNodesWithVariableHandler = async (variableId: string) => {
 
         // If this node uses the variable, add it to the results
         if (propertiesUsingVariable.length > 0) {
-          console.log(
-            `Node ${node.name} (${node.type}) uses variable in properties:`,
-            propertiesUsingVariable
-          );
           let parentComponent = null;
 
           // If the node itself is an INSTANCE, use it as its own component
@@ -231,10 +232,6 @@ const applyAccentStylingHandler = async (data: {
 }) => {
   try {
     const { nodeId, properties } = data;
-    console.log(
-      `Applying styling to node ${nodeId} with properties:`,
-      properties
-    );
     const node = await figma.getNodeByIdAsync(nodeId);
     if (!node || !('type' in node)) {
       console.error(`Node with ID ${nodeId} not found or is not a SceneNode.`);
@@ -266,7 +263,20 @@ const applyAccentStylingHandler = async (data: {
         properties.includes('fontWeight') ||
         properties.includes('fontStyle'));
 
-    if (canApplyStroke || canApplyFill || canApplyTypographyVisualizer) {
+    const canApplySpacingVisualizer =
+      node.type === 'FRAME' &&
+      (properties.includes('paddingTop') ||
+        properties.includes('paddingRight') ||
+        properties.includes('paddingLeft') ||
+        properties.includes('paddingBottom') ||
+        properties.includes('itemSpacing'));
+
+    if (
+      canApplyStroke ||
+      canApplyFill ||
+      canApplyTypographyVisualizer ||
+      canApplySpacingVisualizer
+    ) {
       // Get all local collections
       const allLocalCollections =
         await figma.variables.getLocalVariableCollectionsAsync();
@@ -335,37 +345,121 @@ const applyAccentStylingHandler = async (data: {
           properties.includes('fontWeight') ||
           properties.includes('fontStyle'))
       ) {
-        console.log(
-          'Applying typography visualizer for:',
-          properties.filter(
-            (p) => p === 'fontSize' || p === 'fontWeight' || p === 'fontStyle'
-          )
-        );
         const nodeWithFills = node as any; // Use any type for broader node support
         const currentFills = nodeWithFills.fills;
         if (currentFills !== figma.mixed && Array.isArray(currentFills)) {
           const existingFills = Array.from(currentFills);
           existingFills.push(paint);
           nodeWithFills.fills = existingFills;
-          console.log('Typography visualizer applied');
-        } else {
-          console.log(
-            'Could not apply typography visualizer - fills not compatible:',
-            currentFills
-          );
         }
-      } else {
-        const hasFills = 'fills' in node;
-        const hasFontSize = properties.includes('fontSize');
-        const hasFontWeight = properties.includes('fontWeight');
-        const hasFontStyle = properties.includes('fontStyle');
-        console.log('Typography visualizer NOT applied:', {
-          hasFills,
-          hasFontSize,
-          hasFontWeight,
-          hasFontStyle,
-          properties,
-        });
+      }
+
+      // Apply spacing visualizer if the searched variable is used for spacing properties
+      if (
+        node.type === 'FRAME' &&
+        (properties.includes('paddingTop') ||
+          properties.includes('paddingRight') ||
+          properties.includes('paddingLeft') ||
+          properties.includes('paddingBottom') ||
+          properties.includes('itemSpacing'))
+      ) {
+        const frameNode = node as FrameNode;
+
+        // Visualize padding with inside stroke
+        const hasPaddingProps = properties.some((p) =>
+          [
+            'paddingTop',
+            'paddingRight',
+            'paddingLeft',
+            'paddingBottom',
+          ].includes(p)
+        );
+        if (hasPaddingProps) {
+          const maxPadding = Math.max(
+            frameNode.paddingTop,
+            frameNode.paddingBottom,
+            frameNode.paddingLeft,
+            frameNode.paddingRight
+          );
+
+          if (maxPadding > 0) {
+            // Create blue stroke for padding visualization
+            let paddingPaint = figma.util.solidPaint('#0000FF'); // Blue
+            paddingPaint = figma.variables.setBoundVariableForPaint(
+              paddingPaint,
+              'color',
+              visualizerVariable
+            );
+
+            const currentStrokes = frameNode.strokes;
+            const existingStrokes = Array.from(currentStrokes);
+            existingStrokes.push(paddingPaint);
+            frameNode.strokes = existingStrokes;
+            frameNode.strokeWeight = maxPadding;
+            frameNode.strokeAlign = 'INSIDE';
+          }
+        }
+
+        // Visualize gaps with absolutely positioned rectangles
+        if (
+          properties.includes('itemSpacing') &&
+          frameNode.layoutMode !== 'NONE' &&
+          frameNode.itemSpacing > 0 &&
+          frameNode.children.length > 1
+        ) {
+          const gapValue = frameNode.itemSpacing;
+          const visibleChildren = frameNode.children.filter(
+            (child) => child.visible
+          );
+
+          for (let i = 0; i < visibleChildren.length - 1; i++) {
+            const gapRect = figma.createRectangle();
+            gapRect.name = 'GAP_VIZ';
+
+            // Create red semi-transparent fill
+            const gapPaint: SolidPaint = {
+              type: 'SOLID',
+              color: { r: 1, g: 0, b: 0 }, // Red
+              opacity: 0.5,
+              boundVariables: {
+                color: { type: 'VARIABLE_ALIAS', id: visualizerVariable.id },
+              },
+            };
+            gapRect.fills = [gapPaint];
+
+            // Position absolutely - add to parent, not to the frame
+            const parent = frameNode.parent;
+            if (parent && 'appendChild' in parent) {
+              parent.appendChild(gapRect);
+
+              // Calculate position based on layout direction
+              const child1 = visibleChildren[i];
+              const child2 = visibleChildren[i + 1];
+
+              if (frameNode.layoutMode === 'HORIZONTAL') {
+                // Full height, positioned between children
+                gapRect.resize(
+                  Math.max(gapValue, 2),
+                  frameNode.height -
+                    frameNode.paddingTop -
+                    frameNode.paddingBottom
+                );
+                gapRect.x = frameNode.x + child1.x + child1.width;
+                gapRect.y = frameNode.y + frameNode.paddingTop;
+              } else if (frameNode.layoutMode === 'VERTICAL') {
+                // Full width, positioned between children
+                gapRect.resize(
+                  frameNode.width -
+                    frameNode.paddingLeft -
+                    frameNode.paddingRight,
+                  Math.max(gapValue, 2)
+                );
+                gapRect.x = frameNode.x + frameNode.paddingLeft;
+                gapRect.y = frameNode.y + child1.y + child1.height;
+              }
+            }
+          }
+        }
       }
 
       // Track this node as styled
@@ -470,6 +564,28 @@ const clearAccentStylingHandler = async (nodeId: string) => {
         }
       }
 
+      // Clear spacing visualizations for FRAME nodes
+      if (node.type === 'FRAME') {
+        const frameNode = node as FrameNode;
+
+        // Reset stroke align to default (it gets set to INSIDE for padding visualization)
+        if (frameNode.strokes.length === 0) {
+          frameNode.strokeAlign = 'CENTER'; // Reset to default
+        }
+
+        // Remove gap visualization rectangles from parent
+        const parent = frameNode.parent;
+        if (parent && 'children' in parent) {
+          const gapVizElements = parent.children.filter(
+            (child) => child.name === 'GAP_VIZ'
+          );
+
+          gapVizElements.forEach((element) => {
+            element.remove();
+          });
+        }
+      }
+
       // Remove from styled nodes tracking
       styledNodeIds.delete(nodeId);
 
@@ -519,6 +635,11 @@ const clearAllVisualizerStylingHandler = async () => {
 
     // Helper function to clear visualizer from a node
     const clearVisualizerFromNode = (node: BaseNode) => {
+      // Skip hidden nodes
+      if ('visible' in node && !node.visible) {
+        return;
+      }
+
       let nodeModified = false;
 
       try {
@@ -599,6 +720,33 @@ const clearAllVisualizerStylingHandler = async () => {
               }
             }
           );
+        }
+
+        // Clear spacing visualizations for FRAME nodes
+        if (node.type === 'FRAME') {
+          const frameNode = node as FrameNode;
+
+          // Reset stroke align to default (it gets set to INSIDE for padding visualization)
+          if (frameNode.strokes.length === 0) {
+            frameNode.strokeAlign = 'CENTER'; // Reset to default
+            nodeModified = true;
+          }
+
+          // Remove gap visualization rectangles from parent
+          const parent = frameNode.parent;
+          if (parent && 'children' in parent) {
+            const gapVizElements = parent.children.filter(
+              (child) => child.name === 'GAP_VIZ'
+            );
+
+            gapVizElements.forEach((element) => {
+              element.remove();
+            });
+
+            if (gapVizElements.length > 0) {
+              nodeModified = true;
+            }
+          }
         }
 
         if (nodeModified) {

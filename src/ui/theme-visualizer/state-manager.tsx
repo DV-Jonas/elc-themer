@@ -141,7 +141,21 @@ export const useVisualizerState = (): [VisualizerState, VisualizerActions] => {
         node.properties.includes('fontWeight') ||
         node.properties.includes('fontStyle'));
 
-    return canApplyStroke || canApplyFill || canApplyTypographyVisualizer;
+    // For spacing properties, apply spacing visualizer to FRAME nodes to highlight layout spacing
+    const canApplySpacingVisualizer =
+      node.type === 'FRAME' &&
+      (node.properties.includes('paddingTop') ||
+        node.properties.includes('paddingRight') ||
+        node.properties.includes('paddingLeft') ||
+        node.properties.includes('paddingBottom') ||
+        node.properties.includes('itemSpacing'));
+
+    return (
+      canApplyStroke ||
+      canApplyFill ||
+      canApplyTypographyVisualizer ||
+      canApplySpacingVisualizer
+    );
   };
 
   useEffect(() => {
