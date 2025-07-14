@@ -134,11 +134,14 @@ export const useVisualizerState = (): [VisualizerState, VisualizerActions] => {
         node.type === 'STAR') &&
       node.properties.includes('fills');
 
-    // For fontSize properties, apply fill visualizer to TEXT nodes to highlight font size usage
-    const canApplyFontSizeVisualizer =
-      node.type === 'TEXT' && node.properties.includes('fontSize');
+    // For fontSize, fontWeight, and fontStyle properties, apply fill visualizer to TEXT nodes to highlight typography variable usage
+    const canApplyTypographyVisualizer =
+      node.type === 'TEXT' &&
+      (node.properties.includes('fontSize') ||
+        node.properties.includes('fontWeight') ||
+        node.properties.includes('fontStyle'));
 
-    return canApplyStroke || canApplyFill || canApplyFontSizeVisualizer;
+    return canApplyStroke || canApplyFill || canApplyTypographyVisualizer;
   };
 
   useEffect(() => {

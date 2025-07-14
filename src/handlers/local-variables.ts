@@ -135,6 +135,10 @@ const searchNodesWithVariableHandler = async (variableId: string) => {
 
         // If this node uses the variable, add it to the results
         if (propertiesUsingVariable.length > 0) {
+          console.log(
+            `Node ${node.name} (${node.type}) uses variable in properties:`,
+            propertiesUsingVariable
+          );
           let parentComponent = null;
 
           // If the node itself is an INSTANCE, use it as its own component
@@ -227,6 +231,10 @@ const applyAccentStylingHandler = async (data: {
 }) => {
   try {
     const { nodeId, properties } = data;
+    console.log(
+      `Applying styling to node ${nodeId} with properties:`,
+      properties
+    );
     const node = await figma.getNodeByIdAsync(nodeId);
     if (!node || !('type' in node)) {
       console.error(`Node with ID ${nodeId} not found or is not a SceneNode.`);
@@ -251,12 +259,14 @@ const applyAccentStylingHandler = async (data: {
       'fills' in node &&
       properties.includes('fills');
 
-    const canApplyFontSizeVisualizer =
+    const canApplyTypographyVisualizer =
       node.type === 'TEXT' &&
       'fills' in node &&
-      properties.includes('fontSize');
+      (properties.includes('fontSize') ||
+        properties.includes('fontWeight') ||
+        properties.includes('fontStyle'));
 
-    if (canApplyStroke || canApplyFill || canApplyFontSizeVisualizer) {
+    if (canApplyStroke || canApplyFill || canApplyTypographyVisualizer) {
       // Get all local collections
       const allLocalCollections =
         await figma.variables.getLocalVariableCollectionsAsync();
@@ -318,15 +328,44 @@ const applyAccentStylingHandler = async (data: {
         }
       }
 
-      // Apply visualizer to fills if the searched variable is used for fontSize (to highlight text with variable font sizes)
-      if ('fills' in node && properties.includes('fontSize')) {
+      // Apply visualizer to fills if the searched variable is used for fontSize, fontWeight, or fontStyle (to highlight text with variable typography)
+      if (
+        'fills' in node &&
+        (properties.includes('fontSize') ||
+          properties.includes('fontWeight') ||
+          properties.includes('fontStyle'))
+      ) {
+        console.log(
+          'Applying typography visualizer for:',
+          properties.filter(
+            (p) => p === 'fontSize' || p === 'fontWeight' || p === 'fontStyle'
+          )
+        );
         const nodeWithFills = node as any; // Use any type for broader node support
         const currentFills = nodeWithFills.fills;
         if (currentFills !== figma.mixed && Array.isArray(currentFills)) {
           const existingFills = Array.from(currentFills);
           existingFills.push(paint);
           nodeWithFills.fills = existingFills;
+          console.log('Typography visualizer applied');
+        } else {
+          console.log(
+            'Could not apply typography visualizer - fills not compatible:',
+            currentFills
+          );
         }
+      } else {
+        const hasFills = 'fills' in node;
+        const hasFontSize = properties.includes('fontSize');
+        const hasFontWeight = properties.includes('fontWeight');
+        const hasFontStyle = properties.includes('fontStyle');
+        console.log('Typography visualizer NOT applied:', {
+          hasFills,
+          hasFontSize,
+          hasFontWeight,
+          hasFontStyle,
+          properties,
+        });
       }
 
       // Track this node as styled
