@@ -117,10 +117,28 @@ export const useVisualizerState = (): [VisualizerState, VisualizerActions] => {
   };
 
   const canApplyVisualizer = (node: NodeWithVariable) => {
-    return (
+    // For stroke properties, only FRAME and INSTANCE support additional strokes
+    const canApplyStroke =
       (node.type === 'FRAME' || node.type === 'INSTANCE') &&
-      node.properties.includes('strokes')
-    );
+      node.properties.includes('strokes');
+
+    // For fill properties, multiple node types support fills
+    const canApplyFill =
+      (node.type === 'FRAME' ||
+        node.type === 'INSTANCE' ||
+        node.type === 'VECTOR' ||
+        node.type === 'TEXT' ||
+        node.type === 'ELLIPSE' ||
+        node.type === 'RECTANGLE' ||
+        node.type === 'POLYGON' ||
+        node.type === 'STAR') &&
+      node.properties.includes('fills');
+
+    // For fontSize properties, apply fill visualizer to TEXT nodes to highlight font size usage
+    const canApplyFontSizeVisualizer =
+      node.type === 'TEXT' && node.properties.includes('fontSize');
+
+    return canApplyStroke || canApplyFill || canApplyFontSizeVisualizer;
   };
 
   useEffect(() => {
@@ -146,7 +164,10 @@ export const useVisualizerState = (): [VisualizerState, VisualizerActions] => {
           setTimeout(() => {
             setStatus('applying');
             applicableNodes.forEach((node) => {
-              emit(APPLY_ACCENT_STYLING, node.id);
+              emit(APPLY_ACCENT_STYLING, {
+                nodeId: node.id,
+                properties: node.properties,
+              });
             });
           }, 300);
         } else {

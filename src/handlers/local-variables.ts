@@ -28,10 +28,6 @@ type NodeWithVariable = {
 // Track nodes that have been styled with accent
 const styledNodeIds = new Set<string>();
 
-// Store original stroke values for each styled node
-const originalStrokes = new Map<string, readonly Paint[]>();
-const originalStrokeWeights = new Map<string, number>();
-
 const getLocalVariablesHandler = async () => {
   try {
     // Get all local collections
@@ -225,19 +221,42 @@ const searchNodesWithVariableHandler = async (variableId: string) => {
   }
 };
 
-const applyAccentStylingHandler = async (nodeId: string) => {
+const applyAccentStylingHandler = async (data: {
+  nodeId: string;
+  properties: string[];
+}) => {
   try {
+    const { nodeId, properties } = data;
     const node = await figma.getNodeByIdAsync(nodeId);
     if (!node || !('type' in node)) {
       console.error(`Node with ID ${nodeId} not found or is not a SceneNode.`);
       return;
     }
 
-    // Only apply to frames or instances with stroke property
-    if (
+    // Check if we can apply stroke or fill visualizers to this node type
+    const canApplyStroke =
       (node.type === 'FRAME' || node.type === 'INSTANCE') &&
-      'strokes' in node
-    ) {
+      'strokes' in node &&
+      properties.includes('strokes');
+
+    const canApplyFill =
+      (node.type === 'FRAME' ||
+        node.type === 'INSTANCE' ||
+        node.type === 'VECTOR' ||
+        node.type === 'TEXT' ||
+        node.type === 'ELLIPSE' ||
+        node.type === 'RECTANGLE' ||
+        node.type === 'POLYGON' ||
+        node.type === 'STAR') &&
+      'fills' in node &&
+      properties.includes('fills');
+
+    const canApplyFontSizeVisualizer =
+      node.type === 'TEXT' &&
+      'fills' in node &&
+      properties.includes('fontSize');
+
+    if (canApplyStroke || canApplyFill || canApplyFontSizeVisualizer) {
       // Get all local collections
       const allLocalCollections =
         await figma.variables.getLocalVariableCollectionsAsync();
@@ -270,18 +289,7 @@ const applyAccentStylingHandler = async (nodeId: string) => {
         return;
       }
 
-      // Store original strokes and stroke weight before applying accent styling
-      const currentStrokes = (node as FrameNode | InstanceNode).strokes;
-      const currentStrokeWeight = (node as FrameNode | InstanceNode)
-        .strokeWeight;
-      originalStrokes.set(nodeId, currentStrokes);
-
-      // Only store stroke weight if it's a number (not figma.mixed)
-      if (typeof currentStrokeWeight === 'number') {
-        originalStrokeWeights.set(nodeId, currentStrokeWeight);
-      }
-
-      // Create visualizer color stroke
+      // Create visualizer color paint
       const defaultColor = '#000';
       let paint = figma.util.solidPaint(defaultColor);
       paint = figma.variables.setBoundVariableForPaint(
@@ -290,13 +298,36 @@ const applyAccentStylingHandler = async (nodeId: string) => {
         visualizerVariable
       );
 
-      // Add the visualizer stroke on top of existing strokes (don't replace them)
-      const existingStrokes = Array.from(currentStrokes);
-      existingStrokes.push(paint);
-      (node as FrameNode | InstanceNode).strokes = existingStrokes;
+      // Apply visualizer to strokes ONLY if the searched variable is used for stroke properties
+      if ('strokes' in node && properties.includes('strokes')) {
+        const currentStrokes = (node as FrameNode | InstanceNode).strokes;
+        const existingStrokes = Array.from(currentStrokes);
+        existingStrokes.push(paint);
+        (node as FrameNode | InstanceNode).strokes = existingStrokes;
+        // DON'T modify strokeWeight - let visualizer use existing thickness
+      }
 
-      // Set stroke width to 2px
-      (node as FrameNode | InstanceNode).strokeWeight = 2;
+      // Apply visualizer to fills ONLY if the searched variable is used for fill properties
+      if ('fills' in node && properties.includes('fills')) {
+        const nodeWithFills = node as any; // Use any type for broader node support
+        const currentFills = nodeWithFills.fills;
+        if (currentFills !== figma.mixed && Array.isArray(currentFills)) {
+          const existingFills = Array.from(currentFills);
+          existingFills.push(paint);
+          nodeWithFills.fills = existingFills;
+        }
+      }
+
+      // Apply visualizer to fills if the searched variable is used for fontSize (to highlight text with variable font sizes)
+      if ('fills' in node && properties.includes('fontSize')) {
+        const nodeWithFills = node as any; // Use any type for broader node support
+        const currentFills = nodeWithFills.fills;
+        if (currentFills !== figma.mixed && Array.isArray(currentFills)) {
+          const existingFills = Array.from(currentFills);
+          existingFills.push(paint);
+          nodeWithFills.fills = existingFills;
+        }
+      }
 
       // Track this node as styled
       styledNodeIds.add(nodeId);
@@ -316,25 +347,88 @@ const clearAccentStylingHandler = async (nodeId: string) => {
       return;
     }
 
-    if (
-      (node.type === 'FRAME' || node.type === 'INSTANCE') &&
-      'strokes' in node
-    ) {
-      // Restore original strokes
-      const originalStrokeValues = originalStrokes.get(nodeId);
-      if (originalStrokeValues !== undefined) {
-        (node as FrameNode | InstanceNode).strokes = originalStrokeValues;
-        originalStrokes.delete(nodeId);
-      } else {
-        // Fallback: clear strokes if no original values stored
-        (node as FrameNode | InstanceNode).strokes = [];
+    // Check if we can clear visualizers from this node type
+    const nodeSupportsStrokes =
+      (node.type === 'FRAME' || node.type === 'INSTANCE') && 'strokes' in node;
+    const nodeSupportsFills =
+      (node.type === 'FRAME' ||
+        node.type === 'INSTANCE' ||
+        node.type === 'VECTOR' ||
+        node.type === 'TEXT' ||
+        node.type === 'ELLIPSE' ||
+        node.type === 'RECTANGLE' ||
+        node.type === 'POLYGON' ||
+        node.type === 'STAR') &&
+      'fills' in node;
+
+    if (nodeSupportsStrokes || nodeSupportsFills) {
+      // Get all local collections to find Colors/visualizer variable
+      const allLocalCollections =
+        await figma.variables.getLocalVariableCollectionsAsync();
+
+      // Find the 0.presentation collection
+      const presentationCollection = allLocalCollections.find(
+        (collection) => collection.name === '0.presentation'
+      );
+
+      if (!presentationCollection) {
+        console.error('0.presentation collection not found');
+        return;
       }
 
-      // Restore original stroke weight
-      const originalStrokeWeight = originalStrokeWeights.get(nodeId);
-      if (originalStrokeWeight !== undefined) {
-        (node as FrameNode | InstanceNode).strokeWeight = originalStrokeWeight;
-        originalStrokeWeights.delete(nodeId);
+      // Find the Colors/visualizer variable
+      const variables = await Promise.all(
+        presentationCollection.variableIds.map(async (id) => {
+          return await figma.variables.getVariableByIdAsync(id);
+        })
+      );
+
+      const visualizerVariable = variables.find(
+        (variable) => variable && variable.name === 'Colors/visualizer'
+      );
+
+      if (!visualizerVariable) {
+        console.error(
+          'Colors/visualizer variable not found in 0.presentation collection'
+        );
+        return;
+      }
+
+      // Remove strokes that are bound to the visualizer variable
+      if ('strokes' in node) {
+        const currentStrokes = (node as FrameNode | InstanceNode).strokes;
+        const filteredStrokes = currentStrokes.filter((stroke) => {
+          if (stroke.type === 'SOLID' && stroke.boundVariables?.color) {
+            const colorVar = stroke.boundVariables.color;
+            const isVisualizerStroke =
+              colorVar.type === 'VARIABLE_ALIAS' &&
+              colorVar.id === visualizerVariable.id;
+            return !isVisualizerStroke;
+          }
+          return true;
+        });
+
+        (node as FrameNode | InstanceNode).strokes = filteredStrokes;
+      }
+
+      // Remove fills that are bound to the visualizer variable
+      if ('fills' in node) {
+        const nodeWithFills = node as any; // Use any type for broader node support
+        const currentFills = nodeWithFills.fills;
+        if (currentFills !== figma.mixed && Array.isArray(currentFills)) {
+          const filteredFills = currentFills.filter((fill) => {
+            if (fill.type === 'SOLID' && fill.boundVariables?.color) {
+              const colorVar = fill.boundVariables.color;
+              const isVisualizerFill =
+                colorVar.type === 'VARIABLE_ALIAS' &&
+                colorVar.id === visualizerVariable.id;
+              return !isVisualizerFill;
+            }
+            return true;
+          });
+
+          nodeWithFills.fills = filteredFills;
+        }
       }
 
       // Remove from styled nodes tracking
@@ -389,117 +483,64 @@ const clearAllVisualizerStylingHandler = async () => {
       let nodeModified = false;
 
       try {
-        // Check if this node has bound variables
-        if ('boundVariables' in node && node.boundVariables) {
-          const boundVariables = node.boundVariables;
+        // Check if the node supports strokes and fills and clear visualizer paints
+        const nodeSupportsStrokes =
+          (node.type === 'FRAME' || node.type === 'INSTANCE') &&
+          'strokes' in node;
+        const nodeSupportsFills =
+          (node.type === 'FRAME' ||
+            node.type === 'INSTANCE' ||
+            node.type === 'VECTOR' ||
+            node.type === 'TEXT' ||
+            node.type === 'ELLIPSE' ||
+            node.type === 'RECTANGLE' ||
+            node.type === 'POLYGON' ||
+            node.type === 'STAR') &&
+          'fills' in node;
 
-          // Check all properties that might have bound variables
-          Object.entries(boundVariables).forEach(
-            ([propertyName, variableRefs]) => {
-              if (variableRefs) {
-                try {
-                  // Handle both single variable refs and arrays of variable refs
-                  const refs = Array.isArray(variableRefs)
-                    ? variableRefs
-                    : [variableRefs];
+        if (nodeSupportsStrokes || nodeSupportsFills) {
+          // Handle strokes
+          if ('strokes' in node) {
+            const currentStrokes = (node as FrameNode | InstanceNode).strokes;
+            const filteredStrokes = currentStrokes.filter((stroke) => {
+              if (stroke.type === 'SOLID' && stroke.boundVariables?.color) {
+                const colorVar = stroke.boundVariables.color;
+                const isVisualizerStroke =
+                  colorVar.type === 'VARIABLE_ALIAS' &&
+                  colorVar.id === visualizerVariableId;
+                return !isVisualizerStroke;
+              }
+              return true;
+            });
 
-                  // Check if any ref uses the visualizer variable
-                  const hasVisualizerVariable = refs.some(
-                    (ref) =>
-                      ref &&
-                      ref.type === 'VARIABLE_ALIAS' &&
-                      ref.id === visualizerVariableId
-                  );
+            if (filteredStrokes.length !== currentStrokes.length) {
+              (node as FrameNode | InstanceNode).strokes = filteredStrokes;
+              nodeModified = true;
+            }
+          }
 
-                  if (hasVisualizerVariable) {
-                    // Only modify properties on nodes that support them and are editable
-                    const isEditableNode =
-                      (node.type === 'FRAME' || node.type === 'INSTANCE') &&
-                      'strokes' in node;
-
-                    if (!isEditableNode) {
-                      return; // Skip nodes that don't support stroke modification
-                    }
-
-                    // For arrays of variables, remove only the visualizer variable
-                    if (Array.isArray(variableRefs)) {
-                      // Update the property by removing visualizer-bound elements
-                      if (propertyName === 'strokes') {
-                        const currentStrokes = (
-                          node as FrameNode | InstanceNode
-                        ).strokes;
-                        if (Array.isArray(currentStrokes)) {
-                          // Remove ALL strokes that are bound to the visualizer variable
-                          const newStrokes = currentStrokes.filter((stroke) => {
-                            // Check if this stroke is bound to the visualizer variable
-                            if (
-                              stroke.type === 'SOLID' &&
-                              stroke.boundVariables?.color
-                            ) {
-                              const colorVar = stroke.boundVariables.color;
-                              const isVisualizerStroke =
-                                colorVar.type === 'VARIABLE_ALIAS' &&
-                                colorVar.id === visualizerVariableId;
-                              return !isVisualizerStroke;
-                            }
-                            return true;
-                          });
-
-                          (node as FrameNode | InstanceNode).strokes =
-                            newStrokes;
-                          nodeModified = true;
-                        }
-                      } else if (propertyName === 'fills') {
-                        const currentFills = (node as any).fills;
-                        if (Array.isArray(currentFills)) {
-                          const newFills = currentFills.filter(
-                            (fill: Paint, index: number) => {
-                              const ref = refs[index];
-                              return (
-                                !ref ||
-                                ref.type !== 'VARIABLE_ALIAS' ||
-                                ref.id !== visualizerVariableId
-                              );
-                            }
-                          );
-                          (node as any).fills = newFills;
-                          nodeModified = true;
-                        }
-                      }
-                    } else {
-                      // Single variable ref - remove the single element
-                      if (propertyName === 'strokes') {
-                        const currentStrokes = (
-                          node as FrameNode | InstanceNode
-                        ).strokes;
-                        if (
-                          Array.isArray(currentStrokes) &&
-                          currentStrokes.length === 1
-                        ) {
-                          (node as FrameNode | InstanceNode).strokes = [];
-                          nodeModified = true;
-                        }
-                      } else if (propertyName === 'fills') {
-                        const currentFills = (node as any).fills;
-                        if (
-                          Array.isArray(currentFills) &&
-                          currentFills.length === 1
-                        ) {
-                          (node as any).fills = [];
-                          nodeModified = true;
-                        }
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error(
-                    `Error processing property ${propertyName} on node ${node.id}:`,
-                    error
-                  );
+          // Handle fills
+          if ('fills' in node) {
+            const nodeWithFills = node as any; // Use any type for broader node support
+            const currentFills = nodeWithFills.fills;
+            if (currentFills !== figma.mixed && Array.isArray(currentFills)) {
+              const filteredFills = currentFills.filter((fill) => {
+                if (fill.type === 'SOLID' && fill.boundVariables?.color) {
+                  const colorVar = fill.boundVariables.color;
+                  const isVisualizerFill =
+                    colorVar.type === 'VARIABLE_ALIAS' &&
+                    colorVar.id === visualizerVariableId;
+                  return !isVisualizerFill;
                 }
+                return true;
+              });
+
+              if (filteredFills.length !== currentFills.length) {
+                nodeWithFills.fills = filteredFills;
+                nodeModified = true;
               }
             }
-          );
+          }
         }
 
         // Check component properties if it's an instance
@@ -540,8 +581,6 @@ const clearAllVisualizerStylingHandler = async () => {
 
     // Clear all local tracking since we're doing a comprehensive clear
     styledNodeIds.clear();
-    originalStrokes.clear();
-    originalStrokeWeights.clear();
   } catch (error) {
     console.error('Error clearing all visualizer styling:', error);
   }
