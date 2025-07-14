@@ -13,7 +13,10 @@ const ThemeVisualizer = () => {
   const [state, actions] = useVisualizerState();
 
   const isDisabled =
-    (!state.value || !state.selectedVariable) && !state.hasAppliedStyling;
+    ((!state.value || !state.selectedVariable) && !state.hasAppliedStyling) ||
+    state.status === 'searching' ||
+    state.status === 'applying' ||
+    state.status === 'clearing';
 
   // Helper function to strip emojis from text
   const stripEmojis = (text: string): string => {
