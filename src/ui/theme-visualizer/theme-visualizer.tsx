@@ -71,6 +71,10 @@ const ThemeVisualizer = () => {
     emit(ZOOM_TO_COMPONENT, componentId);
   };
 
+  const handleNodeClick = (nodeId: string) => {
+    emit(ZOOM_TO_COMPONENT, nodeId);
+  };
+
   return (
     <div class='p-4 flex flex-col gap-4'>
       <div class='flex flex-row gap-2 w-full'>
@@ -119,23 +123,29 @@ const ThemeVisualizer = () => {
               return (
                 <div
                   key={componentKey}
-                  class='flex flex-col dark:bg-surface-container-dark rounded-sm cursor-pointer hover:bg-surface-container-high dark:hover:bg-surface-container-high-dark transition-colors hover:pointer'
-                  onClick={() =>
-                    handleComponentClick(
-                      nodes[0]?.parentComponent?.id || nodes[0]?.id
-                    )
-                  }
+                  class='flex flex-col dark:bg-surface-container-dark rounded-sm'
                 >
-                  <div class='font-bold text-md border-b-2 p-2 dark:border-surface-dark'>
+                  <div
+                    class='font-bold text-md border-b-2 p-2 dark:border-surface-dark cursor-pointer hover:bg-surface-container-high dark:hover:bg-surface-container-high-dark transition-colors'
+                    onClick={() =>
+                      handleComponentClick(
+                        nodes[0]?.parentComponent?.id || nodes[0]?.id
+                      )
+                    }
+                  >
                     {capitalizedComponentName}
                   </div>
                   <div class='flex flex-col gap-2 p-2'>
                     {nodes.map((node: any) => (
-                      <div key={node.id} class='text-sm'>
-                        <span class='font-medium'>
+                      <div
+                        key={node.id}
+                        class='text-sm cursor-pointer hover:bg-surface-container-high dark:hover:bg-surface-container-high-dark transition-colors px-2 py-1 -mx-2 -my-1'
+                        onClick={() => handleNodeClick(node.id)}
+                      >
+                        <span class='font-medium cursor-pointer'>
                           {stripEmojis(node.name)}
                         </span>
-                        <span class='text-gray-600 ml-2'>
+                        <span class='text-gray-600 ml-2 cursor-pointer'>
                           - {node.properties.join(', ')}
                         </span>
                       </div>
