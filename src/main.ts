@@ -27,7 +27,7 @@ import {
 } from './handlers/local-variables';
 
 export default async function () {
-  // let themes = await loadThemesAsync();
+  let themes = await loadThemesAsync();
 
   const onToggleFavorite = async (theme: Theme) => {
     // Update cache

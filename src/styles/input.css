@@ -1,3 +1,43 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Viasulizer TextboxAutocomplete styling */
+.visualizer input {
+  height: 28px !important;
+}
+
+.visualizer input::placeholder {
+  color: theme('colors.on-surface-variant.DEFAULT') !important;
+}
+
+.visualizer [class*='menu'] {
+  margin-top: 4px !important;
+  outline: none !important;
+  box-shadow: none !important;
+  max-width: 200px !important;
+  border-radius: theme('borderRadius.md') !important;
+  background-color: theme('colors.surface-container.DEFAULT') !important;
+  color: theme('colors.on-surface.DEFAULT') !important;
+}
+
+.figma-dark .visualizer [class*='menu'] {
+  background-color: theme('colors.surface-container.dark') !important;
+  color: theme('colors.on-surface.dark') !important;
+}
+
+.visualizer [class*='optionHeader'] {
+  color: theme('colors.on-surface-variant.DEFAULT') !important;
+}
+
+.visualizer [class*='optionSeparator'] {
+  background-color: theme('colors.divider.current') !important;
+}
+
+.figma-dark .visualizer [class*='optionHeader'] {
+  color: theme('colors.on-surface-variant.dark') !important;
+}
+
+.figma-dark .visualizer [class*='optionSeparator'] {
+  background-color: theme('colors.divider.dark') !important;
+}

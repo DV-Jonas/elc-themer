@@ -76,9 +76,9 @@ const ThemeVisualizer = () => {
   };
 
   return (
-    <div class='p-4 flex flex-col gap-4'>
+    <div class='visualizer p-4 flex flex-col gap-4'>
       <div class='flex flex-row gap-2 w-full'>
-        <div class='grow dark:bg-surface-container-dark bg-surface-container h-[32px]'>
+        <div class='grow'>
           <TextboxAutocomplete
             {...useInitialFocus()}
             onInput={handleInput}
@@ -123,10 +123,11 @@ const ThemeVisualizer = () => {
               return (
                 <div
                   key={componentKey}
-                  class='flex flex-col dark:bg-surface-container-dark rounded-sm'
+                  class='flex flex-col bg-surface-container dark:bg-surface-container-dark rounded-sm'
                 >
                   <div
-                    class='font-bold text-md border-b-2 p-2 dark:border-surface-dark cursor-pointer hover:bg-surface-container-high dark:hover:bg-surface-container-high-dark transition-colors'
+                    class='font-bold text-md border-b-2 p-2 
+                    border-surface dark:border-surface-dark cursor-pointer hover:bg-surface-container-high dark:hover:bg-surface-container-high-dark transition-colors'
                     onClick={() =>
                       handleComponentClick(
                         nodes[0]?.parentComponent?.id || nodes[0]?.id
@@ -145,7 +146,7 @@ const ThemeVisualizer = () => {
                         <span class='font-medium cursor-pointer'>
                           {stripEmojis(node.name)}
                         </span>
-                        <span class='text-gray-600 ml-2 cursor-pointer'>
+                        <span class='ml-2 cursor-pointer'>
                           - {node.properties.join(', ')}
                         </span>
                       </div>

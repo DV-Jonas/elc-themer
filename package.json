@@ -1,15 +1,15 @@
 {
   "dependencies": {
-    "@create-figma-plugin/ui": "^3.2.0",
-    "@create-figma-plugin/utilities": "^3.2.0",
+    "@create-figma-plugin/ui": "^4.0.1",
+    "@create-figma-plugin/utilities": "^4.0.1",
     "classnames": "^2.5.1",
     "lucide": "^0.446.0",
     "lucide-preact": "^0.446.0",
     "preact": ">=10"
   },
   "devDependencies": {
-    "@create-figma-plugin/build": "^3.2.0",
-    "@create-figma-plugin/tsconfig": "^3.2.0",
+    "@create-figma-plugin/build": "^4.0.1",
+    "@create-figma-plugin/tsconfig": "^4.0.1",
     "@figma/plugin-typings": "1.100.2",
     "concurrently": ">=8",
     "tailwindcss": ">=3",
@@ -34,10 +34,10 @@
     "enableProposedApi": false,
     "documentAccess": "dynamic-page",
     "networkAccess": {
-       "allowedDomains": [
-         "none"
-       ]
-     },
+      "allowedDomains": [
+        "none"
+      ]
+    },
     "permissions": [
       "teamlibrary"
     ]

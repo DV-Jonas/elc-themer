@@ -30,7 +30,7 @@ const Button = ({
       ? 'bg-error text-on-error text-on-primary'
       : 'bg-primary text-on-primary';
 
-  const sizeClasses = size === 'sm' ? 'text-sm h-7 rounded-sm' : 'py-3 text-md';
+  const sizeClasses = size === 'sm' ? 'text-sm h-7 rounded-md' : 'py-3 text-md';
 
   return (
     <Fragment>
