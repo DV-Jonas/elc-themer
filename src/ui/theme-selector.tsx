@@ -8,8 +8,15 @@ import Footer from '../components/footer';
 import { APPLY_THEME } from '../events';
 
 function ThemeSelector() {
-  const [themes, setThemes] = useState<Theme[]>([]);
+  const [allThemes, setAllThemes] = useState<Theme[]>([]);
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
+
+  // Filter themes to only show those with actual themeable collections (not just swap collections)
+  const themes = allThemes.filter(theme => 
+    theme.collections.some(collection => 
+      collection.name === '1.theme' || collection.name === '2.responsive'
+    )
+  );
 
   const onSelectTheme = (theme: Theme) => {
     setSelectedTheme((prevTheme) => (prevTheme === theme ? null : theme));
@@ -19,7 +26,7 @@ function ThemeSelector() {
     emit(APPLY_THEME, selectedTheme!.name, depth);
   };
 
-  on('THEMES', setThemes);
+  on('THEMES', setAllThemes);
 
   return (
     <Fragment>
