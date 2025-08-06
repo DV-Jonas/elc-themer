@@ -19,7 +19,6 @@ let log: ErrorWithPayload[] = [];
 const themer = async (nodes: SceneNode[], theme: Theme, depth: ThemeDepth) => {
   log = [];
 
-  // Filter for visible nodes first
   const nodesWithMetadata = nodes.filter((node) =>
     node.getSharedPluginDataKeys(config.namespace).includes(config.key)
   );
@@ -29,6 +28,7 @@ const themer = async (nodes: SceneNode[], theme: Theme, depth: ThemeDepth) => {
       config.namespace,
       config.key
     );
+
     const { textDecoration, textTransform, gradientOverlay, icon, component } =
       JSON.parse(tokensAsString);
 
@@ -189,8 +189,6 @@ const applyGradientOverlay = async (
 };
 
 const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
-  // To apply the swap, we need to get the custom component key
-  // from the variable stored in the brand library local variables collection
   const collection = theme.collections.find((c) => c.name === token.collection);
   const collectionValues = collection!.variables!;
   const variable = collectionValues.find(
@@ -210,8 +208,6 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
     return;
   }
 
-  //// Fetch component from team library
-  // First we get the component key from the variable
   let componentKey: VariableValue;
   try {
     componentKey = variable.resolveForConsumer(node).value;
@@ -225,7 +221,6 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
       }
     );
   }
-  // Then we fetch the component set from the team library
 
   const componentSet = await figma.importComponentSetByKeyAsync(
     componentKey as string
@@ -233,7 +228,7 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
   if (!componentSet) {
     log.push(
       new ErrorWithPayload(
-        `Variable not found for path: ${config.iconPath + node.name}`,
+        `Failed to import component set with key: ${componentKey}`,
         {
           node: node,
         }
@@ -241,7 +236,7 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
     );
     return;
   }
-  // Then we find the variant that matches the node's current variant
+
   const variantProps = (node as InstanceNode).variantProperties;
   const component = (componentSet.children.find((child) => {
     if ('variantProperties' in child) {
@@ -264,7 +259,6 @@ const applyIconSwap = async (node: SceneNode, theme: Theme, token: Token) => {
     return;
   }
 
-  // Then we swap the component
   (node as InstanceNode).swapComponent(component);
 };
 
